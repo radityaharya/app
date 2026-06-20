@@ -1,47 +1,51 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# Dependencies
 node_modules/
+.pnp
+.pnp.js
 
-# Expo
-.expo/
+# Build outputs
 dist/
-web-build/
-expo-env.d.ts
+build/
+.expo/
+*.tgz
 
-# Native
-.kotlin/
-*.orig.*
+# Go
+apps/api/bin/
+apps/api/*.exe
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Secrets — never commit
+credentials.json
+**/credentials.json
+*firebase-adminsdk*.json
+
+# Expo / EAS
 *.jks
 *.p8
 *.p12
 *.key
 *.mobileprovision
+*.orig.*
+android/
+ios/
 
-# Metro
-.metro-health-check*
+# Editor
+.vscode/
+.idea/
+.claude/settings.local.json
+*.swp
+*.swo
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# OS
 .DS_Store
-*.pem
+Thumbs.db
 
-# local env files
-.env*.local
+# Turbo
+.turbo/
 
-# typescript
-*.tsbuildinfo
-
-app-example
-
-# generated native folders
-/ios
-/android
-
-# Firebase — contains API keys, do not commit
-google-services.json
-GoogleService-Info.plist
+# pnpm
+.pnpm-debug.log

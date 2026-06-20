@@ -1,0 +1,7 @@
+.env
+tmp/
+bin/
+api
+*.db
+*.db-shm
+*.db-wal
