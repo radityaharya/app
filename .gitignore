@@ -49,3 +49,6 @@ Thumbs.db
 
 # pnpm
 .pnpm-debug.log
+
+
+.ignore
