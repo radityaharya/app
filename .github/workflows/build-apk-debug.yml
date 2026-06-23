@@ -31,15 +31,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Generate Android project
+        working-directory: apps/mobile
+        env:
+          GOOGLE_MAPS_ANDROID_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_KEY }}
+        run: pnpm exec expo prebuild --platform android --no-install --clean
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
           gradle-home-cache-cleanup: true
+          build-root-directory: apps/mobile/android
 
       - name: Build debug APK
         working-directory: apps/mobile/android
         env:
+          EXPO_USE_METRO_WORKSPACE_ROOT: 1
           GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_KEY }}
         run: ./gradlew assembleDebug --no-daemon
 
