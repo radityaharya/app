@@ -133,6 +133,7 @@ export default function SettingsScreen() {
             needsNotifications={needsNotifications}
             needsLocation={needsLocation}
             locationDenied={location.permissionStatus === 'denied'}
+            onRequestLocation={() => void location.requestPermissions()}
           />
         )}
 
@@ -156,6 +157,13 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="integrations" C={C}>
+          <ActionRow
+            C={C}
+            label="import via QR"
+            detail="scan a config QR to set urls & geofences"
+            onPress={() => router.push('/qr-scan' as never)}
+          />
+          <Divider C={C} />
           <ActionRow
             C={C}
             label="connected services"
@@ -406,11 +414,13 @@ function PermissionCard({
   needsNotifications,
   needsLocation,
   locationDenied,
+  onRequestLocation,
 }: {
   C: ThemeColors;
   needsNotifications: boolean;
   needsLocation: boolean;
   locationDenied: boolean;
+  onRequestLocation: () => void;
 }) {
   return (
     <View
@@ -421,22 +431,41 @@ function PermissionCard({
         borderRadius: Radius.sm,
         backgroundColor: C.destructiveSubtle,
         padding: 16,
-        gap: 8,
+        gap: 10,
       }}
     >
       <Text style={{ fontSize: 12, fontWeight: '600', fontFamily: MONO, color: C.destructive }}>
         permissions needed
       </Text>
+      {needsLocation ? (
+        <View style={{ gap: 6 }}>
+          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.text, lineHeight: 17 }}>
+            {locationDenied
+              ? 'location denied — open system settings to allow always-on access.'
+              : 'location access is needed for background stop detection.'}
+          </Text>
+          {!locationDenied && (
+            <Pressable
+              onPress={onRequestLocation}
+              style={({ pressed }) => ({
+                alignSelf: 'flex-start',
+                paddingHorizontal: 12,
+                paddingVertical: 7,
+                borderRadius: Radius.sm,
+                backgroundColor: C.destructive,
+                opacity: pressed ? 0.75 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: MONO, color: '#fff' }}>
+                grant location
+              </Text>
+            </Pressable>
+          )}
+        </View>
+      ) : null}
       {needsNotifications ? (
         <Text style={{ fontSize: 11, fontFamily: MONO, color: C.text, lineHeight: 17 }}>
-          enable notifications so geofence alerts can show.
-        </Text>
-      ) : null}
-      {needsLocation ? (
-        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.text, lineHeight: 17 }}>
-          {locationDenied
-            ? 'location denied — allow always-on access in system settings.'
-            : 'set location to always for background tracking.'}
+          enable notifications in system settings so geofence alerts can show.
         </Text>
       ) : null}
     </View>

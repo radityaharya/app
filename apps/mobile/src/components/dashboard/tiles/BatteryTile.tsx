@@ -1,63 +1,72 @@
 import * as Battery from 'expo-battery';
 import { useEffect, useState } from 'react';
-import { Text, View } from 'react-native';
+import { Platform, View } from 'react-native';
 
-import { MONO, type ThemeColors } from '@/components/tokens';
+import { TileBar, TileHero, TileLine } from './TileLines';
+import { type ThemeColors } from '@/components/tokens';
 
 interface BatteryTileProps {
   C: ThemeColors;
 }
 
+function batteryStateLabel(state: Battery.BatteryState | null): string {
+  switch (state) {
+    case Battery.BatteryState.CHARGING:
+      return 'charging';
+    case Battery.BatteryState.FULL:
+      return 'full';
+    case Battery.BatteryState.UNPLUGGED:
+      return 'on battery';
+    case Battery.BatteryState.NOT_CHARGING:
+      return 'plugged, idle';
+    case Battery.BatteryState.UNKNOWN:
+      return 'unknown';
+    default:
+      return '—';
+  }
+}
+
 export function BatteryTile({ C }: BatteryTileProps) {
-  const [level, setLevel] = useState<number | null>(null);
-  const [charging, setCharging] = useState(false);
+  const power = Battery.usePowerState();
+  const [optimized, setOptimized] = useState<boolean | null>(null);
 
   useEffect(() => {
-    let levelSub: Battery.Subscription | undefined;
-    let stateSub: Battery.Subscription | undefined;
-
-    (async () => {
-      try {
-        setLevel(await Battery.getBatteryLevelAsync());
-        const state = await Battery.getBatteryStateAsync();
-        setCharging(state === Battery.BatteryState.CHARGING || state === Battery.BatteryState.FULL);
-        levelSub = Battery.addBatteryLevelListener(({ batteryLevel }) => setLevel(batteryLevel));
-        stateSub = Battery.addBatteryStateListener(({ batteryState }) =>
-          setCharging(
-            batteryState === Battery.BatteryState.CHARGING ||
-              batteryState === Battery.BatteryState.FULL,
-          ),
-        );
-      } catch {
-        // unavailable on web/simulator
-      }
-    })();
-
-    return () => {
-      levelSub?.remove();
-      stateSub?.remove();
-    };
+    if (Platform.OS !== 'android') return;
+    Battery.isBatteryOptimizationEnabledAsync()
+      .then(setOptimized)
+      .catch(() => setOptimized(null));
   }, []);
 
+  const level = power.batteryLevel >= 0 ? power.batteryLevel : null;
   const pct = level != null ? Math.round(level * 100) : null;
+  const lowPower = power.lowPowerMode;
+  const state = power.batteryState;
+
+  const heroTone =
+    pct != null && pct <= 15 ? 'danger' : pct != null && pct <= 30 ? 'warn' : 'default';
 
   return (
     <View>
-      <Text
-        style={{
-          fontSize: 32,
-          fontWeight: '700',
-          fontFamily: MONO,
-          color: C.text,
-          fontVariant: ['tabular-nums'],
-          letterSpacing: -1,
-        }}
-      >
-        {pct != null ? `${pct}%` : '—'}
-      </Text>
-      <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginTop: 4 }}>
-        {charging ? 'charging' : pct != null && pct <= 20 ? 'low battery' : 'battery level'}
-      </Text>
+      <TileHero
+        value={pct != null ? `${pct}%` : '—'}
+        subtitle={batteryStateLabel(state)}
+        C={C}
+        tone={heroTone}
+      />
+      <TileBar pct={pct} C={C} />
+      <TileLine label="state" value={batteryStateLabel(state)} C={C} />
+      <TileLine
+        label="low power"
+        value={lowPower ? 'on' : 'off'}
+        C={C}
+      />
+      {Platform.OS === 'android' && optimized != null ? (
+        <TileLine
+          label="optimization"
+          value={optimized ? 'enabled (may limit bg)' : 'disabled'}
+          C={C}
+        />
+      ) : null}
     </View>
   );
 }

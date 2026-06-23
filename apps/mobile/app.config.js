@@ -12,6 +12,13 @@ module.exports = {
     bundleIdentifier: 'com.commuter.app',
     infoPlist: {
       UIBackgroundModes: ['location', 'remote-notification', 'fetch'],
+      NSCameraUsageDescription:
+        'Allow Commuter to use the camera to scan QR codes for configuration import.',
+      NSPhotoLibraryUsageDescription:
+        'Allow Commuter to access your photos to attach images in Hermes chat.',
+      NSAppTransportSecurity: {
+        NSAllowsArbitraryLoads: true,
+      },
     },
   },
   android: {
@@ -21,6 +28,7 @@ module.exports = {
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
+    usesCleartextTraffic: true,
     predictiveBackGestureEnabled: false,
     softwareKeyboardLayoutMode: 'resize',
     package: 'com.commuter.app',
@@ -38,6 +46,8 @@ module.exports = {
       'android.permission.FOREGROUND_SERVICE_LOCATION',
       'android.permission.READ_CALENDAR',
       'android.permission.WRITE_CALENDAR',
+      'android.permission.CAMERA',
+      'android.permission.READ_MEDIA_IMAGES',
     ],
   },
   web: {
@@ -86,6 +96,8 @@ module.exports = {
         requestLocationPermission: true,
       },
     ],
+    'expo-camera',
+    'expo-sharing',
     'expo-web-browser',
     'expo-font',
     'expo-image',

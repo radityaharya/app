@@ -15,6 +15,7 @@ import (
 	"github.com/radityaharya/commuter/internal/push"
 	"github.com/radityaharya/commuter/internal/store"
 	commutesync "github.com/radityaharya/commuter/internal/sync"
+	"github.com/radityaharya/commuter/internal/webhook"
 )
 
 func main() {
@@ -43,10 +44,14 @@ func main() {
 
 	// --- HTTP routes ---------------------------------------------------------
 	pushClient := push.NewClient(cfg.ExpoPushURL)
+	hermesWebhook := webhook.NewClient(cfg.HermesWebhookURL, cfg.HermesWebhookSecret)
 	mux := http.NewServeMux()
 
 	mux.HandleFunc("GET /health", handler.Health)
-	mux.HandleFunc("POST /notifications/send", handler.Notifications(pushClient))
+	mux.HandleFunc("POST /notifications/send", handler.Notifications(handler.NotificationDeps{
+		Push:    pushClient,
+		Webhook: hermesWebhook,
+	}))
 
 	stationList, stationGet := handler.Stations(db)
 	mux.HandleFunc("GET /v1/stations", stationList)
@@ -54,13 +59,13 @@ func main() {
 
 	mux.HandleFunc("GET /v1/schedule/{station_id}", handler.Schedule(db, syncer))
 
-	mux.HandleFunc("POST /v1/geofence/trigger", handler.GeofenceTrigger(db))
+	mux.HandleFunc("POST /v1/geofence/trigger", handler.GeofenceTrigger(db, hermesWebhook))
 
 	// --- Server --------------------------------------------------------------
 	addr := fmt.Sprintf(":%s", cfg.Port)
 	srv := &http.Server{Addr: addr, Handler: corsMiddleware(mux)}
 
-	slog.Info("commuter API starting", "addr", addr, "db", cfg.DBPath)
+	slog.Info("commuter API starting", "addr", addr, "db", cfg.DBPath, "hermes_webhook", hermesWebhook != nil)
 
 	go func() {
 		<-ctx.Done()

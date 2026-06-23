@@ -1,6 +1,7 @@
 import { ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { CalendarSection } from '@/components/dashboard/CalendarSection';
 import { ShortcutStrip } from '@/components/shortcuts/ShortcutStrip';
 import { ClockHeader } from '@/components/dashboard/ClockHeader';
 import { GeofenceToggle } from '@/components/dashboard/GeofenceToggle';
@@ -25,6 +26,12 @@ export default function HomeScreen() {
 
         <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
           <ShortcutStrip C={C} showEmpty />
+        </View>
+
+        <View style={{ height: 1, backgroundColor: C.hairline }} />
+
+        <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
+          <CalendarSection C={C} />
         </View>
 
         <View style={{ height: 1, backgroundColor: C.hairline }} />

@@ -123,6 +123,14 @@ function AppShell() {
             headerShown: false,
           }}
         />
+        <Stack.Screen
+          name="qr-scan"
+          options={{
+            presentation: 'fullScreenModal',
+            headerShown: false,
+            animation: 'fade',
+          }}
+        />
       </Stack>
     </NavThemeProvider>
   );

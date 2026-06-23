@@ -76,7 +76,7 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
         >
           {toolLabel(name)}
           {!expanded && preview ? (
-            <Text style={{ color: C.textSecondary }}>{` · ${preview}`}</Text>
+            <Text selectable={false} style={{ color: C.textSecondary }}>{` · ${preview}`}</Text>
           ) : null}
         </Text>
 

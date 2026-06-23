@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 
 import { BatteryTile } from './tiles/BatteryTile';
+import { DeviceTile } from './tiles/DeviceTile';
+import { GeofencesTile } from './tiles/GeofencesTile';
+import { LocationTile } from './tiles/LocationTile';
 import { NetworkTile } from './tiles/NetworkTile';
 import { TrainsTile } from './tiles/TrainsTile';
 import { MONO, type ThemeColors } from '@/components/tokens';
@@ -12,6 +15,9 @@ const TILE_LABELS: Record<DashboardTileId, string> = {
   trains: 'trains',
   battery: 'battery',
   network: 'network',
+  location: 'location',
+  device: 'device',
+  geofences: 'geofences',
 };
 
 interface QuickTilesProps {
@@ -154,5 +160,11 @@ function TileContent({ id, C }: { id: DashboardTileId; C: ThemeColors }) {
       return <BatteryTile C={C} />;
     case 'network':
       return <NetworkTile C={C} />;
+    case 'location':
+      return <LocationTile C={C} />;
+    case 'device':
+      return <DeviceTile C={C} />;
+    case 'geofences':
+      return <GeofencesTile C={C} />;
   }
 }

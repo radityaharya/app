@@ -28,7 +28,7 @@ export function ChatBubble({ role, content, images, streaming, C }: ChatBubblePr
         style={{
           borderWidth: isUser ? 0 : 1,
           borderColor: C.hairline,
-          backgroundColor: isUser ? C.text : C.background,
+          backgroundColor: isUser ? C.surfaceDark : C.background,
           paddingHorizontal: hasImages ? 8 : 14,
           paddingVertical: hasImages ? 8 : 10,
           borderRadius: 4,
@@ -51,10 +51,11 @@ export function ChatBubble({ role, content, images, streaming, C }: ChatBubblePr
         {isUser ? (
           content ? (
             <Text
+              selectable
               style={{
                 fontSize: 13,
                 fontFamily: MONO,
-                color: C.background,
+                color: C.onDark,
                 lineHeight: 20,
                 paddingHorizontal: hasImages ? 6 : 0,
                 paddingBottom: hasImages ? 4 : 0,
@@ -72,6 +73,7 @@ export function ChatBubble({ role, content, images, streaming, C }: ChatBubblePr
           >
             {streaming ? (
               <Text
+                selectable
                 style={{
                   fontSize: 13,
                   fontFamily: MONO,

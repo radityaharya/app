@@ -291,7 +291,14 @@ export function dbDeleteGeofence(id: string): void {
 
 // ── Dashboard tiles ───────────────────────────────────────────────────────────
 
-export const DASHBOARD_TILE_IDS = ['trains', 'battery', 'network'] as const;
+export const DASHBOARD_TILE_IDS = [
+  'trains',
+  'battery',
+  'network',
+  'location',
+  'device',
+  'geofences',
+] as const;
 export type DashboardTileId = (typeof DASHBOARD_TILE_IDS)[number];
 
 const DEFAULT_DASHBOARD_TILES: DashboardTileId[] = ['trains'];
