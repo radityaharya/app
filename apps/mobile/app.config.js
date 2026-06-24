@@ -28,7 +28,6 @@ module.exports = {
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
     },
-    usesCleartextTraffic: true,
     predictiveBackGestureEnabled: false,
     softwareKeyboardLayoutMode: 'resize',
     package: 'com.commuter.app',
@@ -55,6 +54,13 @@ module.exports = {
     favicon: './assets/images/favicon.png',
   },
   plugins: [
+    [
+      'expo-build-properties',
+      {
+        android: { usesCleartextTraffic: true },
+        ios: { deploymentTarget: '16.4' },
+      },
+    ],
     'expo-router',
     'expo-updates',
     [

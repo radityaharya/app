@@ -18,6 +18,10 @@ apps/api/*.exe
 .env.local
 .env.*.local
 
+# Local credentials store — never commit
+.credentials/*
+!.credentials/.gitkeep
+
 # Secrets — never commit
 credentials.json
 **/credentials.json
