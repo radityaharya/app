@@ -58,6 +58,7 @@ jobs:
         working-directory: apps/mobile
         env:
           GOOGLE_MAPS_ANDROID_KEY: ${{ secrets.GOOGLE_MAPS_ANDROID_KEY }}
+          EXPO_UPDATES_CHANNEL: production
         run: pnpm exec expo prebuild --platform android --no-install --clean
 
       - name: Set up Gradle
