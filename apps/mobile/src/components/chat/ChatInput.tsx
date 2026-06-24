@@ -1,5 +1,6 @@
 import { Image } from 'expo-image';
-import { Pressable, Text, TextInput, View, type LayoutChangeEvent } from 'react-native';
+import { ArrowUp, Paperclip, X } from 'lucide-react-native';
+import { Pressable, TextInput, View, type LayoutChangeEvent } from 'react-native';
 
 import { MONO, type ThemeColors } from '@/components/tokens';
 
@@ -36,12 +37,12 @@ export function ChatInput({
     <View
       onLayout={onLayout}
       style={{
+        paddingHorizontal: 12,
+        paddingTop: 10,
+        paddingBottom: Math.max(10, bottomInset),
+        backgroundColor: C.background,
         borderTopWidth: 1,
         borderTopColor: C.hairline,
-        paddingHorizontal: 16,
-        paddingTop: 12,
-        paddingBottom: Math.max(12, bottomInset),
-        backgroundColor: C.background,
       }}
     >
       {pendingImageUri ? (
@@ -51,7 +52,7 @@ export function ChatInput({
             style={{
               width: 72,
               height: 72,
-              borderRadius: 4,
+              borderRadius: 10,
               borderWidth: 1,
               borderColor: C.hairline,
             }}
@@ -73,33 +74,39 @@ export function ChatInput({
               opacity: pressed ? 0.7 : 1,
             })}
           >
-            <Text style={{ fontSize: 12, fontFamily: MONO, color: C.background, lineHeight: 14 }}>
-              ×
-            </Text>
+            <X size={11} color={C.background} strokeWidth={2.5} />
           </Pressable>
         </View>
       ) : null}
 
-      <View style={{ flexDirection: 'row', alignItems: 'flex-end', gap: 8 }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'flex-end',
+          gap: 8,
+          backgroundColor: C.backgroundElement,
+          borderRadius: 24,
+          borderWidth: 1,
+          borderColor: C.hairline,
+          paddingHorizontal: 4,
+          paddingVertical: 4,
+        }}
+      >
         {onAttach ? (
           <Pressable
             onPress={onAttach}
             disabled={disabled}
             hitSlop={8}
             style={({ pressed }) => ({
-              borderWidth: 1,
-              borderColor: C.hairline,
-              borderRadius: 4,
-              width: 36,
-              height: 36,
+              width: 34,
+              height: 34,
+              borderRadius: 17,
               alignItems: 'center',
               justifyContent: 'center',
-              opacity: disabled ? 0.4 : pressed ? 0.7 : 1,
+              opacity: disabled ? 0.35 : pressed ? 0.6 : 1,
             })}
           >
-            <Text style={{ fontSize: 18, fontFamily: MONO, color: C.textSecondary, lineHeight: 20 }}>
-              +
-            </Text>
+            <Paperclip size={17} color={C.textSecondary} strokeWidth={1.75} />
           </Pressable>
         ) : null}
 
@@ -113,15 +120,13 @@ export function ChatInput({
           editable={!disabled}
           style={{
             flex: 1,
-            fontSize: 13,
+            fontSize: 14,
             fontFamily: MONO,
             color: C.text,
             maxHeight: 120,
-            paddingVertical: 8,
-            paddingHorizontal: 12,
-            borderWidth: 1,
-            borderColor: C.hairline,
-            borderRadius: 4,
+            paddingVertical: 6,
+            paddingHorizontal: onAttach ? 0 : 12,
+            lineHeight: 20,
           }}
           onSubmitEditing={() => {
             if (canSend) onSend();
@@ -130,26 +135,18 @@ export function ChatInput({
         />
 
         <Pressable
-          onPress={onSend}
-          disabled={!canSend}
+          onPress={canSend ? onSend : undefined}
           style={({ pressed }) => ({
+            width: 34,
+            height: 34,
+            borderRadius: 17,
             backgroundColor: canSend ? C.text : C.backgroundSelected,
-            borderRadius: 4,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
+            alignItems: 'center',
+            justifyContent: 'center',
             opacity: pressed ? 0.7 : 1,
           })}
         >
-          <Text
-            style={{
-              fontSize: 12,
-              fontWeight: '700',
-              fontFamily: MONO,
-              color: canSend ? C.background : C.textSecondary,
-            }}
-          >
-            send
-          </Text>
+          <ArrowUp size={17} color={canSend ? C.background : C.textSecondary} strokeWidth={2.5} />
         </Pressable>
       </View>
     </View>

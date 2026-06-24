@@ -17,6 +17,8 @@ import {
 import { useSharedValue, withTiming } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { ArrowLeft, MoreHorizontal, Square } from 'lucide-react-native';
+
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessageList } from '@/components/chat/ChatMessageList';
 import { ConnectionBanner } from '@/components/chat/ConnectionBanner';
@@ -262,30 +264,40 @@ function ChatHeader({
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 14,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: C.hairline,
-        gap: 12,
+        gap: 8,
       }}
     >
-      <Pressable onPress={onBack} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-        <Text style={{ fontSize: 13, fontWeight: '500', fontFamily: MONO, color: C.text }}>
-          back
-        </Text>
+      <Pressable
+        onPress={onBack}
+        hitSlop={12}
+        style={({ pressed }) => ({
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: C.backgroundSelected,
+          opacity: pressed ? 0.6 : 1,
+          flexShrink: 0,
+        })}
+      >
+        <ArrowLeft size={17} color={C.text} strokeWidth={1.75} />
       </Pressable>
 
       <Pressable
         onPress={onModelPress ?? onOverflow}
         disabled={!onModelPress && streaming}
-        style={{ flex: 1, alignItems: 'center' }}
+        style={{ flex: 1, alignItems: 'center', paddingHorizontal: 4 }}
       >
         <Text
           numberOfLines={1}
           style={{
-            fontSize: 16,
+            fontSize: 15,
             fontWeight: '700',
             fontFamily: MONO,
             color: C.text,
@@ -295,18 +307,29 @@ function ChatHeader({
           {title}
         </Text>
         {subtitle ? (
-          <Text
-            numberOfLines={1}
-            style={{
-              fontSize: 10,
-              fontFamily: MONO,
-              color: C.textSecondary,
-              marginTop: 2,
-              textAlign: 'center',
-            }}
-          >
-            {subtitle}
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 5, marginTop: 2 }}>
+            {streaming ? (
+              <View
+                style={{
+                  width: 5,
+                  height: 5,
+                  borderRadius: 3,
+                  backgroundColor: C.statusActive,
+                }}
+              />
+            ) : null}
+            <Text
+              numberOfLines={1}
+              style={{
+                fontSize: 10,
+                fontFamily: MONO,
+                color: streaming ? C.statusActive : C.textSecondary,
+                textAlign: 'center',
+              }}
+            >
+              {streaming ? 'responding…' : subtitle}
+            </Text>
+          </View>
         ) : null}
       </Pressable>
 
@@ -315,21 +338,34 @@ function ChatHeader({
           onPress={onStop}
           hitSlop={12}
           style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: C.destructiveSubtle,
             opacity: pressed ? 0.6 : 1,
-            borderWidth: 1,
-            borderColor: C.destructive,
-            borderRadius: 4,
-            paddingHorizontal: 10,
-            paddingVertical: 6,
+            flexShrink: 0,
           })}
         >
-          <Text style={{ fontSize: 12, fontWeight: '600', fontFamily: MONO, color: C.destructive }}>
-            stop
-          </Text>
+          <Square size={14} color={C.destructive} strokeWidth={0} fill={C.destructive} />
         </Pressable>
       ) : (
-        <Pressable onPress={onOverflow} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-          <Text style={{ fontSize: 18, fontFamily: MONO, color: C.textSecondary }}>⋯</Text>
+        <Pressable
+          onPress={onOverflow}
+          hitSlop={12}
+          style={({ pressed }) => ({
+            width: 36,
+            height: 36,
+            borderRadius: 18,
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: C.backgroundSelected,
+            opacity: pressed ? 0.6 : 1,
+            flexShrink: 0,
+          })}
+        >
+          <MoreHorizontal size={17} color={C.text} strokeWidth={1.75} />
         </Pressable>
       )}
     </View>

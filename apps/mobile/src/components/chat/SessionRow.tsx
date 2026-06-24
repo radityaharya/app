@@ -1,6 +1,7 @@
-import type { HermesSession } from '@/types/hermes';
+import { ChevronRight, MessageSquare } from 'lucide-react-native';
 import { Pressable, Text, View } from 'react-native';
 
+import type { HermesSession } from '@/types/hermes';
 import { MONO, type ThemeColors } from '@/components/tokens';
 
 interface SessionRowProps {
@@ -20,7 +21,8 @@ function formatRelativeTime(iso?: string, epoch?: number): string {
   const hours = Math.floor(mins / 60);
   if (hours < 24) return `${hours}h ago`;
   const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  if (days < 7) return `${days}d ago`;
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
 }
 
 export function SessionRow({ session, onPress, onLongPress, C }: SessionRowProps) {
@@ -36,28 +38,42 @@ export function SessionRow({ session, onPress, onLongPress, C }: SessionRowProps
       onLongPress={onLongPress}
       style={({ pressed }) => ({
         paddingHorizontal: 20,
-        paddingVertical: 16,
+        paddingVertical: 14,
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        gap: 12,
+        gap: 14,
         opacity: pressed ? 0.7 : 1,
       })}
     >
-      <View style={{ flex: 1 }}>
+      <View
+        style={{
+          width: 34,
+          height: 34,
+          borderRadius: 8,
+          backgroundColor: C.backgroundSelected,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+        }}
+      >
+        <MessageSquare size={15} color={C.textSecondary} strokeWidth={1.5} />
+      </View>
+
+      <View style={{ flex: 1, gap: 2 }}>
         <Text
           numberOfLines={1}
-          style={{ fontSize: 15, fontWeight: '600', fontFamily: MONO, color: C.text }}
+          style={{ fontSize: 14, fontWeight: '600', fontFamily: MONO, color: C.text }}
         >
           {title}
         </Text>
         {time ? (
-          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginTop: 3 }}>
+          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>
             {time}
           </Text>
         ) : null}
       </View>
-      <Text style={{ fontSize: 16, fontFamily: MONO, color: C.textSecondary }}>›</Text>
+
+      <ChevronRight size={15} color={C.textSecondary} strokeWidth={1.5} />
     </Pressable>
   );
 }

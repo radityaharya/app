@@ -13,6 +13,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { ArrowLeft, PenLine, Wifi, WifiOff } from 'lucide-react-native';
+
 import { ConnectionBanner, EmptyState } from '@/components/chat/ConnectionBanner';
 import { SessionRow } from '@/components/chat/SessionRow';
 import { MONO, type ThemeColors } from '@/components/tokens';
@@ -214,41 +216,44 @@ function Header({
   onNew: () => void;
   creating: boolean;
 }) {
+  const StatusIcon = connected ? Wifi : WifiOff;
+  const statusColor = checking ? C.textSecondary : connected ? C.statusActive : C.destructive;
+
   return (
     <View
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 16,
-        paddingBottom: 14,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 12,
         borderBottomWidth: 1,
         borderBottomColor: C.hairline,
+        gap: 8,
       }}
     >
-      <Pressable onPress={onBack} hitSlop={12} style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}>
-        <Text style={{ fontSize: 13, fontWeight: '500', fontFamily: MONO, color: C.text }}>
-          back
-        </Text>
+      <Pressable
+        onPress={onBack}
+        hitSlop={12}
+        style={({ pressed }) => ({
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: C.backgroundSelected,
+          opacity: pressed ? 0.6 : 1,
+          flexShrink: 0,
+        })}
+      >
+        <ArrowLeft size={17} color={C.text} strokeWidth={1.75} />
       </Pressable>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-        <View
-          style={{
-            width: 8,
-            height: 8,
-            borderRadius: 4,
-            backgroundColor: checking
-              ? C.textSecondary
-              : connected
-                ? C.statusActive
-                : C.destructive,
-          }}
-        />
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 7 }}>
+        <StatusIcon size={13} color={statusColor} strokeWidth={1.75} />
         <Text
           style={{
-            fontSize: 18,
+            fontSize: 16,
             fontWeight: '700',
             fontFamily: MONO,
             color: C.text,
@@ -264,20 +269,20 @@ function Header({
         disabled={creating}
         hitSlop={12}
         style={({ pressed }) => ({
+          width: 36,
+          height: 36,
+          borderRadius: 18,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: C.backgroundSelected,
           opacity: pressed || creating ? 0.6 : 1,
-          borderWidth: 1,
-          borderColor: C.hairline,
-          borderRadius: 4,
-          paddingHorizontal: 10,
-          paddingVertical: 6,
+          flexShrink: 0,
         })}
       >
         {creating ? (
           <ActivityIndicator size="small" color={C.text} />
         ) : (
-          <Text style={{ fontSize: 13, fontWeight: '500', fontFamily: MONO, color: C.text }}>
-            new
-          </Text>
+          <PenLine size={16} color={C.text} strokeWidth={1.75} />
         )}
       </Pressable>
     </View>

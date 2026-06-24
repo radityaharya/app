@@ -28,10 +28,16 @@ function toolLabel(name: string): string {
   return TOOL_LABELS[name] ?? name.replace(/_/g, ' ');
 }
 
-function statusColor(status: ToolCallCardProps['status'], C: ThemeColors): string {
-  if (status === 'running') return C.textSecondary;
+function statusAccent(status: ToolCallCardProps['status'], C: ThemeColors): string {
+  if (status === 'running') return C.statusInactive;
   if (status === 'failed') return C.destructive;
-  return C.textSecondary;
+  return C.statusActive;
+}
+
+function statusText(status: ToolCallCardProps['status']): string {
+  if (status === 'running') return 'running';
+  if (status === 'failed') return 'failed';
+  return 'done';
 }
 
 export function ToolCallCard({ name, arguments: args, output, status, C }: ToolCallCardProps) {
@@ -40,6 +46,7 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
   const formattedArgs = formatToolPayload(args);
   const formattedOutput = formatToolPayload(output);
   const preview = summarizeToolPayload(output) || summarizeToolPayload(args);
+  const accent = statusAccent(status, C);
 
   useEffect(() => {
     if (running) setExpanded(true);
@@ -51,8 +58,13 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
         alignSelf: 'stretch',
         borderWidth: 1,
         borderColor: C.hairline,
-        borderRadius: 4,
+        borderLeftWidth: 3,
+        borderLeftColor: accent,
+        borderRadius: 8,
+        borderTopLeftRadius: 4,
+        borderBottomLeftRadius: 4,
         marginVertical: 3,
+        marginHorizontal: 4,
         overflow: 'hidden',
         backgroundColor: C.backgroundElement,
       }}
@@ -62,37 +74,69 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
         style={({ pressed }) => ({
           flexDirection: 'row',
           alignItems: 'center',
-          gap: 6,
-          paddingHorizontal: 8,
-          paddingVertical: 6,
+          gap: 8,
+          paddingHorizontal: 10,
+          paddingVertical: 8,
           opacity: pressed ? 0.85 : 1,
         })}
       >
-        {running ? <ActivityIndicator size="small" color={C.textSecondary} style={{ transform: [{ scale: 0.8 }] }} /> : null}
+        {running ? (
+          <ActivityIndicator
+            size="small"
+            color={accent}
+            style={{ transform: [{ scale: 0.75 }] }}
+          />
+        ) : (
+          <View
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: 3,
+              backgroundColor: accent,
+            }}
+          />
+        )}
 
         <Text
           numberOfLines={expanded ? 1 : 2}
-          style={{ flex: 1, fontSize: 11, fontFamily: MONO, color: C.text, lineHeight: 15 }}
+          style={{ flex: 1, fontSize: 12, fontFamily: MONO, color: C.text, lineHeight: 16 }}
         >
           {toolLabel(name)}
           {!expanded && preview ? (
-            <Text selectable={false} style={{ color: C.textSecondary }}>{` · ${preview}`}</Text>
+            <Text selectable={false} style={{ color: C.textSecondary }}>{`  ${preview}`}</Text>
           ) : null}
         </Text>
 
-        <Text style={{ fontSize: 10, fontFamily: MONO, color: statusColor(status, C) }}>
-          {running ? '…' : status === 'failed' ? 'fail' : 'ok'}
+        <Text
+          style={{
+            fontSize: 10,
+            fontFamily: MONO,
+            color: accent,
+            letterSpacing: 0.3,
+          }}
+        >
+          {statusText(status)}
         </Text>
       </Pressable>
 
       {expanded ? (
-        <View style={{ paddingHorizontal: 8, paddingBottom: 8, gap: 6, borderTopWidth: 1, borderTopColor: C.hairline }}>
-          {formattedArgs ? <ToolSection title="in" body={formattedArgs} C={C} /> : null}
+        <View
+          style={{
+            paddingHorizontal: 10,
+            paddingBottom: 10,
+            gap: 8,
+            borderTopWidth: 1,
+            borderTopColor: C.hairline,
+          }}
+        >
+          {formattedArgs ? <ToolSection title="input" body={formattedArgs} C={C} /> : null}
 
           {running ? (
-            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>waiting…</Text>
+            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
+              waiting…
+            </Text>
           ) : formattedOutput ? (
-            <ToolSection title="out" body={formattedOutput} C={C} markdown />
+            <ToolSection title="output" body={formattedOutput} C={C} markdown />
           ) : (
             <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
               {status === 'failed' ? 'no output' : 'empty'}
@@ -116,8 +160,17 @@ function ToolSection({
   markdown?: boolean;
 }) {
   return (
-    <View style={{ gap: 2 }}>
-      <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
+    <View style={{ gap: 4, paddingTop: 8 }}>
+      <Text
+        style={{
+          fontSize: 9,
+          fontWeight: '700',
+          fontFamily: MONO,
+          color: C.textSecondary,
+          letterSpacing: 0.8,
+          textTransform: 'uppercase',
+        }}
+      >
         {title}
       </Text>
       <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 180 }}>
