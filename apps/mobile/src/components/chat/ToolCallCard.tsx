@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
 
 import { MarkdownContent } from '@/components/chat/MarkdownContent';
 import { MONO, type ThemeColors } from '@/components/tokens';
@@ -28,25 +28,36 @@ function toolLabel(name: string): string {
   return TOOL_LABELS[name] ?? name.replace(/_/g, ' ');
 }
 
-function statusAccent(status: ToolCallCardProps['status'], C: ThemeColors): string {
-  if (status === 'running') return C.statusInactive;
-  if (status === 'failed') return C.destructive;
-  return C.statusActive;
-}
+function RunningDots({ C }: { C: ThemeColors }) {
+  const opacity = useRef(new Animated.Value(1)).current;
 
-function statusText(status: ToolCallCardProps['status']): string {
-  if (status === 'running') return 'running';
-  if (status === 'failed') return 'failed';
-  return 'done';
+  useEffect(() => {
+    const anim = Animated.loop(
+      Animated.sequence([
+        Animated.timing(opacity, { toValue: 0.2, duration: 600, useNativeDriver: true }),
+        Animated.timing(opacity, { toValue: 1, duration: 600, useNativeDriver: true }),
+      ]),
+    );
+    anim.start();
+    return () => anim.stop();
+  }, [opacity]);
+
+  return (
+    <Animated.Text
+      style={{ opacity, fontSize: 10, fontFamily: MONO, color: C.textSecondary }}
+    >
+      ···
+    </Animated.Text>
+  );
 }
 
 export function ToolCallCard({ name, arguments: args, output, status, C }: ToolCallCardProps) {
   const running = status === 'running';
+  const failed = status === 'failed';
   const [expanded, setExpanded] = useState(running);
   const formattedArgs = formatToolPayload(args);
   const formattedOutput = formatToolPayload(output);
   const preview = summarizeToolPayload(output) || summarizeToolPayload(args);
-  const accent = statusAccent(status, C);
 
   useEffect(() => {
     if (running) setExpanded(true);
@@ -58,15 +69,11 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
         alignSelf: 'stretch',
         borderWidth: 1,
         borderColor: C.hairline,
-        borderLeftWidth: 3,
-        borderLeftColor: accent,
-        borderRadius: 8,
-        borderTopLeftRadius: 4,
-        borderBottomLeftRadius: 4,
+        borderRadius: 4,
         marginVertical: 3,
         marginHorizontal: 4,
         overflow: 'hidden',
-        backgroundColor: C.backgroundElement,
+        backgroundColor: C.backgroundSelected,
       }}
     >
       <Pressable
@@ -75,71 +82,62 @@ export function ToolCallCard({ name, arguments: args, output, status, C }: ToolC
           flexDirection: 'row',
           alignItems: 'center',
           gap: 8,
-          paddingHorizontal: 10,
-          paddingVertical: 8,
-          opacity: pressed ? 0.85 : 1,
+          paddingHorizontal: 12,
+          paddingVertical: 9,
+          opacity: pressed ? 0.7 : 1,
         })}
       >
-        {running ? (
-          <ActivityIndicator
-            size="small"
-            color={accent}
-            style={{ transform: [{ scale: 0.75 }] }}
-          />
-        ) : (
-          <View
-            style={{
-              width: 6,
-              height: 6,
-              borderRadius: 3,
-              backgroundColor: accent,
-            }}
-          />
-        )}
-
         <Text
-          numberOfLines={expanded ? 1 : 2}
-          style={{ flex: 1, fontSize: 12, fontFamily: MONO, color: C.text, lineHeight: 16 }}
+          numberOfLines={1}
+          style={{
+            flex: 1,
+            fontSize: 11,
+            fontFamily: MONO,
+            color: C.textSecondary,
+          }}
         >
           {toolLabel(name)}
           {!expanded && preview ? (
-            <Text selectable={false} style={{ color: C.textSecondary }}>{`  ${preview}`}</Text>
+            <Text style={{ color: C.hairlineStrong }}>{`  ${preview}`}</Text>
           ) : null}
         </Text>
 
-        <Text
-          style={{
-            fontSize: 10,
-            fontFamily: MONO,
-            color: accent,
-            letterSpacing: 0.3,
-          }}
-        >
-          {statusText(status)}
-        </Text>
+        {running ? (
+          <RunningDots C={C} />
+        ) : (
+          <Text
+            style={{
+              fontSize: 10,
+              fontFamily: MONO,
+              color: failed ? C.destructive : C.textSecondary,
+            }}
+          >
+            {failed ? 'failed' : 'done'}
+          </Text>
+        )}
       </Pressable>
 
       {expanded ? (
         <View
           style={{
-            paddingHorizontal: 10,
-            paddingBottom: 10,
-            gap: 8,
             borderTopWidth: 1,
             borderTopColor: C.hairline,
+            paddingHorizontal: 12,
+            paddingBottom: 10,
+            gap: 10,
           }}
         >
           {formattedArgs ? <ToolSection title="input" body={formattedArgs} C={C} /> : null}
 
           {running ? (
-            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
+            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary, paddingTop: 8 }}>
               waiting…
             </Text>
           ) : formattedOutput ? (
             <ToolSection title="output" body={formattedOutput} C={C} markdown />
           ) : (
-            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
-              {status === 'failed' ? 'no output' : 'empty'}
+            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary, paddingTop: 8 }}>
+              {failed ? 'no output' : 'empty'}
             </Text>
           )}
         </View>
@@ -164,11 +162,12 @@ function ToolSection({
       <Text
         style={{
           fontSize: 9,
-          fontWeight: '700',
+          fontWeight: '600',
           fontFamily: MONO,
           color: C.textSecondary,
-          letterSpacing: 0.8,
+          letterSpacing: 0.6,
           textTransform: 'uppercase',
+          opacity: 0.7,
         }}
       >
         {title}
@@ -184,6 +183,7 @@ function ToolSection({
               fontFamily: MONO,
               color: C.text,
               lineHeight: 15,
+              opacity: 0.85,
             }}
           >
             {body}
