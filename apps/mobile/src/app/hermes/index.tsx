@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ArrowLeft, PenLine, Wifi, WifiOff } from 'lucide-react-native';
 
+import { ActionSheet } from '@/components/chat/ActionSheet';
 import { ConnectionBanner, EmptyState } from '@/components/chat/ConnectionBanner';
 import { SessionRow } from '@/components/chat/SessionRow';
 import { MONO, type ThemeColors } from '@/components/tokens';
@@ -38,6 +39,7 @@ export default function HermesSessionsScreen() {
   const [creating, setCreating] = useState(false);
   const [renameTarget, setRenameTarget] = useState<{ id: string; title: string } | null>(null);
   const [renameValue, setRenameValue] = useState('');
+  const [sessionSheet, setSessionSheet] = useState<{ id: string; title: string } | null>(null);
 
   async function handleNewChat() {
     if (!configured) {
@@ -56,53 +58,37 @@ export default function HermesSessionsScreen() {
   }
 
   function handleSessionLongPress(id: string, title: string) {
-    Alert.alert(title, undefined, [
-      {
-        text: 'rename',
-        onPress: () => {
-          if (Platform.OS === 'ios') {
-            Alert.prompt(
-              'Rename session',
-              undefined,
-              async (newTitle) => {
-                if (!newTitle?.trim()) return;
-                try {
-                  await renameSession(id, newTitle.trim());
-                } catch (e) {
-                  Alert.alert('Error', e instanceof Error ? e.message : 'Rename failed');
-                }
-              },
-              'plain-text',
-              title,
-            );
-          } else {
-            setRenameTarget({ id, title });
-            setRenameValue(title);
+    setSessionSheet({ id, title });
+  }
+
+  function openRename(id: string, title: string) {
+    if (Platform.OS === 'ios') {
+      Alert.prompt(
+        'Rename session',
+        undefined,
+        async (newTitle) => {
+          if (!newTitle?.trim()) return;
+          try {
+            await renameSession(id, newTitle.trim());
+          } catch (e) {
+            Alert.alert('Error', e instanceof Error ? e.message : 'Rename failed');
           }
         },
-      },
-      {
-        text: 'delete',
-        style: 'destructive',
-        onPress: () => {
-          Alert.alert('Delete session', 'This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteSession(id);
-                } catch (e) {
-                  Alert.alert('Error', e instanceof Error ? e.message : 'Delete failed');
-                }
-              },
-            },
-          ]);
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+        'plain-text',
+        title,
+      );
+    } else {
+      setRenameTarget({ id, title });
+      setRenameValue(title);
+    }
+  }
+
+  async function handleDeleteSession(id: string) {
+    try {
+      await deleteSession(id);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Delete failed');
+    }
   }
 
   const showBanner = !checking && (connected === false || !configured);
@@ -170,7 +156,7 @@ export default function HermesSessionsScreen() {
                   C={C}
                   onPress={() => router.push(`/hermes/${session.id}` as never)}
                   onLongPress={() =>
-                    handleSessionLongPress(session.id, session.title ?? 'untitled session')
+                    handleSessionLongPress(session.id, session.title?.trim() ?? 'untitled session')
                   }
                 />
               </View>
@@ -197,6 +183,32 @@ export default function HermesSessionsScreen() {
           }}
         />
       ) : null}
+
+      <ActionSheet
+        visible={Boolean(sessionSheet)}
+        title={sessionSheet?.title}
+        onClose={() => setSessionSheet(null)}
+        C={C}
+        actions={[
+          {
+            label: 'rename',
+            onPress: () => {
+              const s = sessionSheet;
+              setSessionSheet(null);
+              if (s) openRename(s.id, s.title);
+            },
+          },
+          {
+            label: 'delete',
+            destructive: true,
+            onPress: () => {
+              const s = sessionSheet;
+              setSessionSheet(null);
+              if (s) void handleDeleteSession(s.id);
+            },
+          },
+        ]}
+      />
     </SafeAreaView>
   );
 }

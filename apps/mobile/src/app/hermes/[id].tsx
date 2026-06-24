@@ -19,6 +19,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 
 import { ArrowLeft, MoreHorizontal, Square } from 'lucide-react-native';
 
+import { ActionSheet } from '@/components/chat/ActionSheet';
 import { ChatInput } from '@/components/chat/ChatInput';
 import { ChatMessageList } from '@/components/chat/ChatMessageList';
 import { ConnectionBanner } from '@/components/chat/ConnectionBanner';
@@ -46,6 +47,8 @@ export default function HermesChatScreen() {
   const [sending, setSending] = useState(false);
   const [title, setTitle] = useState('chat');
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const scrollRef = useRef<React.ElementRef<typeof KeyboardChatScrollView>>(null);
   const composerHeight = useSharedValue(0);
 
@@ -114,52 +117,25 @@ export default function HermesChatScreen() {
   }
 
   function handleOverflow() {
-    const actions: Array<{ text: string; style?: 'destructive' | 'cancel'; onPress?: () => void }> = [];
+    setSheetOpen(true);
+  }
 
-    if (dashboard.authenticated) {
-      actions.push({
-        text: 'change model',
-        onPress: () => setPickerOpen(true),
-      });
+  async function handleFork() {
+    try {
+      const forked = await hermes.forkSession(sessionId, { title: `${title} (fork)` });
+      router.push(`/hermes/${forked.id}` as never);
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Fork failed');
     }
+  }
 
-    actions.push(
-      {
-        text: 'fork',
-        onPress: async () => {
-          try {
-            const forked = await hermes.forkSession(sessionId, { title: `${title} (fork)` });
-            router.push(`/hermes/${forked.id}` as never);
-          } catch (e) {
-            Alert.alert('Error', e instanceof Error ? e.message : 'Fork failed');
-          }
-        },
-      },
-      {
-        text: 'delete',
-        style: 'destructive',
-        onPress: () => {
-          Alert.alert('Delete session', 'This cannot be undone.', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-              text: 'Delete',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await hermes.deleteSession(sessionId);
-                  router.back();
-                } catch (e) {
-                  Alert.alert('Error', e instanceof Error ? e.message : 'Delete failed');
-                }
-              },
-            },
-          ]);
-        },
-      },
-      { text: 'Cancel', style: 'cancel' },
-    );
-
-    Alert.alert(title, dashboard.mainModelLabel ?? undefined, actions);
+  async function handleDelete() {
+    try {
+      await hermes.deleteSession(sessionId);
+      router.back();
+    } catch (e) {
+      Alert.alert('Error', e instanceof Error ? e.message : 'Delete failed');
+    }
   }
 
   const inputBottomInset = Math.max(12, insets.bottom);
@@ -235,6 +211,34 @@ export default function HermesChatScreen() {
           Alert.alert('Model updated', 'New sessions will use this model.');
         }}
         C={C}
+      />
+
+      {/* Overflow action sheet */}
+      <ActionSheet
+        visible={sheetOpen}
+        title={title}
+        subtitle={dashboard.mainModelLabel ?? undefined}
+        onClose={() => setSheetOpen(false)}
+        C={C}
+        actions={[
+          ...(dashboard.authenticated
+            ? [{ label: 'change model', onPress: () => setPickerOpen(true) }]
+            : []),
+          { label: 'fork session', onPress: () => void handleFork() },
+          { label: 'delete session', destructive: true, onPress: () => setDeleteConfirmOpen(true) },
+        ]}
+      />
+
+      {/* Delete confirm sheet */}
+      <ActionSheet
+        visible={deleteConfirmOpen}
+        title="delete session?"
+        subtitle="this cannot be undone."
+        onClose={() => setDeleteConfirmOpen(false)}
+        C={C}
+        actions={[
+          { label: 'delete', destructive: true, onPress: () => void handleDelete() },
+        ]}
       />
     </SafeAreaView>
   );
