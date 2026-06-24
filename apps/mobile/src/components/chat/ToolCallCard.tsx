@@ -174,7 +174,7 @@ function ToolSection({
       </Text>
       <ScrollView nestedScrollEnabled showsVerticalScrollIndicator={false} style={{ maxHeight: 180 }}>
         {markdown && !body.trimStart().startsWith('{') && !body.trimStart().startsWith('[') ? (
-          <MarkdownContent content={body} C={C} />
+          <MarkdownContent content={body} C={C} fontSize={11} />
         ) : (
           <Text
             selectable
