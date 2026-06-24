@@ -27,17 +27,14 @@ interface ActionSheetProps {
 export function ActionSheet({ visible, title, subtitle, actions, onClose, C }: ActionSheetProps) {
   const insets = useSafeAreaInsets();
   const ref = useRef<BottomSheetModal>(null);
-  // Guard: never call dismiss() before present() — doing so sets internal status
-  // to DISMISSING which causes handlePortalRender to skip rendering permanently.
-  const everPresentedRef = useRef(false);
 
   useEffect(() => {
     if (visible) {
-      everPresentedRef.current = true;
       ref.current?.present();
-    } else if (everPresentedRef.current) {
-      ref.current?.dismiss();
     }
+    // Never call dismiss() here — the sheet self-manages dismissal via gesture/
+    // backdrop/cancel. Calling dismiss() after onDismiss fires would set internal
+    // status back to DISMISSING, breaking every subsequent present() call.
   }, [visible]);
 
   const renderBackdrop = useCallback(
