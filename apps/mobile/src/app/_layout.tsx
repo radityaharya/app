@@ -3,7 +3,6 @@ import '../global.css';
 import { DarkTheme, DefaultTheme, ThemeProvider as NavThemeProvider } from "expo-router";
 import { router, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -143,11 +142,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
         <UpdateProvider autoCheckOnLaunch>
-          <BottomSheetModalProvider>
-            <KeyboardProvider>
-              <AppShell />
-            </KeyboardProvider>
-          </BottomSheetModalProvider>
+          <KeyboardProvider>
+            <AppShell />
+          </KeyboardProvider>
         </UpdateProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
