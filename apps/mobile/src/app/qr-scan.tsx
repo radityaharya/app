@@ -16,7 +16,12 @@ import {
   dbAddGeofence,
   dbGetGeofences,
   dbDeleteGeofence,
+  dbAddShortcut,
+  dbGetShortcuts,
+  dbRemoveShortcut,
 } from '@/lib/db';
+import { setHermesApiKey } from '@/lib/hermesConfig';
+import { setDashboardCredentials } from '@/lib/hermesDashboardConfig';
 
 interface QRPayloadGeofence {
   name: string;
@@ -27,13 +32,23 @@ interface QRPayloadGeofence {
   enabled?: boolean;
 }
 
+interface QRPayloadShortcut {
+  url: string;
+  label: string;
+  type?: string;
+}
+
 interface QRPayload {
   v: number;
   api_url?: string;
   hermes_url?: string;
   hermes_dashboard_url?: string;
+  hermes_api_key?: string;
+  hermes_dashboard_username?: string;
+  hermes_dashboard_password?: string;
   monitored_stations?: string[];
   geofences?: QRPayloadGeofence[];
+  shortcuts?: QRPayloadShortcut[];
 }
 
 function parsePayload(raw: string): QRPayload | null {
@@ -48,7 +63,7 @@ function parsePayload(raw: string): QRPayload | null {
   }
 }
 
-function applyPayload(payload: QRPayload): string[] {
+async function applyPayload(payload: QRPayload): Promise<string[]> {
   const applied: string[] = [];
 
   if (payload.api_url) {
@@ -62,6 +77,17 @@ function applyPayload(payload: QRPayload): string[] {
   if (payload.hermes_dashboard_url) {
     dbSetHermesDashboardUrl(payload.hermes_dashboard_url);
     applied.push(`hermes dashboard url → ${payload.hermes_dashboard_url}`);
+  }
+  if (payload.hermes_api_key) {
+    await setHermesApiKey(payload.hermes_api_key);
+    applied.push('hermes api key → imported');
+  }
+  if (payload.hermes_dashboard_username || payload.hermes_dashboard_password) {
+    await setDashboardCredentials(
+      payload.hermes_dashboard_username ?? '',
+      payload.hermes_dashboard_password ?? '',
+    );
+    applied.push('hermes dashboard credentials → imported');
   }
   if (Array.isArray(payload.monitored_stations)) {
     dbSetMonitoredIds(payload.monitored_stations);
@@ -81,6 +107,14 @@ function applyPayload(payload: QRPayload): string[] {
       });
     }
     applied.push(`geofences → ${payload.geofences.length} imported`);
+  }
+  if (Array.isArray(payload.shortcuts) && payload.shortcuts.length > 0) {
+    const existing = dbGetShortcuts();
+    for (const s of existing) dbRemoveShortcut(s.url);
+    for (const s of payload.shortcuts) {
+      dbAddShortcut(s.url, s.label, null, (s.type as 'web' | 'app') ?? 'web');
+    }
+    applied.push(`shortcuts → ${payload.shortcuts.length} imported`);
   }
 
   return applied;
@@ -115,12 +149,12 @@ export default function QRScanScreen() {
       }
 
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const applied = applyPayload(payload);
-      const summary = applied.length > 0 ? applied.join('\n') : 'no changes';
-
-      Alert.alert('config imported', summary, [
-        { text: 'done', onPress: () => router.back() },
-      ]);
+      void applyPayload(payload).then((applied) => {
+        const summary = applied.length > 0 ? applied.join('\n') : 'no changes';
+        Alert.alert('config imported', summary, [
+          { text: 'done', onPress: () => router.back() },
+        ]);
+      });
     },
     [scanned],
   );

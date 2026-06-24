@@ -159,6 +159,13 @@ export default function SettingsScreen() {
         <Section title="integrations" C={C}>
           <ActionRow
             C={C}
+            label="share config"
+            detail="export settings as QR code or JSON file"
+            onPress={() => router.push('/share-config' as never)}
+          />
+          <Divider C={C} />
+          <ActionRow
+            C={C}
             label="import via QR"
             detail="scan a config QR to set urls & geofences"
             onPress={() => router.push('/qr-scan' as never)}
