@@ -1,4 +1,5 @@
 import * as WebBrowser from 'expo-web-browser';
+import { Image } from 'expo-image';
 import { useMemo } from 'react';
 import { Platform, Pressable, ScrollView, Text, View } from 'react-native';
 
@@ -13,7 +14,8 @@ type Block =
   | { type: 'bullet_list'; items: string[] }
   | { type: 'ordered_list'; items: string[] }
   | { type: 'blockquote'; content: string }
-  | { type: 'hr' };
+  | { type: 'hr' }
+  | { type: 'image'; alt: string; url: string };
 
 function tokenize(md: string): Block[] {
   const blocks: Block[] = [];
@@ -86,6 +88,14 @@ function tokenize(md: string): Block[] {
       continue;
     }
 
+    // Standalone image
+    const imgm = line.match(/^!\[([^\]]*)\]\(([^)]+)\)\s*$/);
+    if (imgm) {
+      blocks.push({ type: 'image', alt: imgm[1], url: imgm[2] });
+      i++;
+      continue;
+    }
+
     // Empty line
     if (line.trim() === '') {
       i++;
@@ -103,7 +113,8 @@ function tokenize(md: string): Block[] {
       !lines[i].startsWith('> ') &&
       !/^[-*+]\s/.test(lines[i]) &&
       !/^\d+[.)]\s/.test(lines[i]) &&
-      !/^(---+|\*\*\*+|___+)\s*$/.test(lines[i])
+      !/^(---+|\*\*\*+|___+)\s*$/.test(lines[i]) &&
+      !/^!\[/.test(lines[i])
     ) {
       paraLines.push(lines[i]);
       i++;
@@ -123,9 +134,10 @@ type Span =
   | { type: 'bold'; content: string }
   | { type: 'italic'; content: string }
   | { type: 'code'; content: string }
-  | { type: 'link'; label: string; url: string };
+  | { type: 'link'; label: string; url: string }
+  | { type: 'image'; alt: string; url: string };
 
-const INLINE_RE = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|__(.+?)__|_(.+?)_|\*(.+?)\*|`(.+?)`|\[(.+?)\]\((.+?)\))/gs;
+const INLINE_RE = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|__(.+?)__|_(.+?)_|\*(.+?)\*|`(.+?)`|!\[([^\]]*)\]\(([^)]+)\)|\[(.+?)\]\((.+?)\))/gs;
 
 function parseInline(text: string): Span[] {
   const spans: Span[] = [];
@@ -139,7 +151,6 @@ function parseInline(text: string): Span[] {
     }
     const raw = m[0];
     if (raw.startsWith('***')) {
-      // bold+italic — treat as bold for simplicity
       spans.push({ type: 'bold', content: m[2] });
     } else if (raw.startsWith('**') || raw.startsWith('__')) {
       spans.push({ type: 'bold', content: m[3] ?? m[4] });
@@ -147,8 +158,10 @@ function parseInline(text: string): Span[] {
       spans.push({ type: 'italic', content: m[5] ?? m[6] });
     } else if (raw.startsWith('`')) {
       spans.push({ type: 'code', content: m[7] });
+    } else if (raw.startsWith('![')) {
+      spans.push({ type: 'image', alt: m[8] ?? '', url: m[9] });
     } else if (raw.startsWith('[')) {
-      spans.push({ type: 'link', label: m[8], url: m[9] });
+      spans.push({ type: 'link', label: m[10], url: m[11] });
     }
     last = m.index + raw.length;
   }
@@ -231,6 +244,22 @@ function InlineContent({ text, rp }: { text: string; rp: RenderProps }) {
                 {span.label}
               </Text>
             </Pressable>
+          );
+        }
+        if (span.type === 'image') {
+          return (
+            <Image
+              key={i}
+              source={{ uri: span.url }}
+              accessibilityLabel={span.alt}
+              style={{
+                width: '100%',
+                height: 180,
+                borderRadius: 4,
+                backgroundColor: C.backgroundSelected,
+              }}
+              contentFit="contain"
+            />
           );
         }
         return <Text key={i}>{span.content}</Text>;
@@ -355,6 +384,37 @@ function BlockView({ block, rp }: { block: Block; rp: RenderProps }) {
             marginVertical: 8,
           }}
         />
+      );
+
+    case 'image':
+      return (
+        <View style={{ marginVertical: 4 }}>
+          <Image
+            source={{ uri: block.url }}
+            accessibilityLabel={block.alt}
+            style={{
+              width: '100%',
+              height: 220,
+              borderRadius: 4,
+              backgroundColor: C.backgroundSelected,
+            }}
+            contentFit="contain"
+          />
+          {block.alt ? (
+            <Text
+              style={{
+                fontSize: fontSize - 3,
+                fontFamily: MONO,
+                color: textColor,
+                opacity: 0.5,
+                marginTop: 4,
+                textAlign: 'center',
+              }}
+            >
+              {block.alt}
+            </Text>
+          ) : null}
+        </View>
       );
 
     case 'paragraph':
