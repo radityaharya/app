@@ -1,4 +1,5 @@
-import { ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { CalendarSection } from '@/components/dashboard/CalendarSection';
@@ -7,10 +8,16 @@ import { GeofenceToggle } from '@/components/dashboard/GeofenceToggle';
 import { HermesSection } from '@/components/dashboard/HermesSection';
 import { QuickTiles } from '@/components/dashboard/QuickTiles';
 import { TrainsTile } from '@/components/dashboard/tiles/TrainsTile';
+import { MONO } from '@/components/tokens';
 import { useThemeContext } from '@/context/ThemeContext';
+
+function Divider({ C }: { C: { hairline: string } }) {
+  return <View style={{ height: 1, backgroundColor: C.hairline }} />;
+}
 
 export default function HomeScreen() {
   const { colors: C } = useThemeContext();
+  const [tilesOpen, setTilesOpen] = useState(false);
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.background }} edges={['top']}>
@@ -18,60 +25,69 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 48 }}
       >
-        <View style={{ paddingHorizontal: 20, paddingTop: 28, paddingBottom: 24 }}>
-          <ClockHeader C={C} />
+        {/* Clock — compact single line */}
+        <View style={{ paddingHorizontal: 20, paddingVertical: 14 }}>
+          <ClockHeader C={C} compact />
         </View>
 
-        <View style={{ height: 1, backgroundColor: C.hairline }} />
+        <Divider C={C} />
 
-        {/* Schedule + Trains two-column row */}
-        <View
-          style={{
-            flexDirection: 'row',
-            paddingHorizontal: 20,
-            paddingVertical: 20,
-            gap: 12,
-          }}
-        >
-          <View
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: C.hairline,
-              padding: 14,
-            }}
-          >
-            <CalendarSection C={C} />
-          </View>
-          <View
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: C.hairline,
-              padding: 14,
-            }}
-          >
-            <TrainsTile C={C} />
-          </View>
+        {/* Trains — full-width, priority #1 */}
+        <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
+          <TrainsTile C={C} />
         </View>
 
-        <View style={{ height: 1, backgroundColor: C.hairline }} />
+        <Divider C={C} />
 
+        {/* Hermes — priority #2 */}
         <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
           <HermesSection C={C} />
         </View>
 
-        <View style={{ height: 1, backgroundColor: C.hairline }} />
+        <Divider C={C} />
 
+        {/* Calendar — priority #3, full-width */}
+        <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
+          <CalendarSection C={C} />
+        </View>
+
+        <Divider C={C} />
+
+        {/* Geofence toggle */}
         <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
           <GeofenceToggle C={C} />
         </View>
 
-        <View style={{ height: 1, backgroundColor: C.hairline }} />
+        <Divider C={C} />
 
-        <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
-          <QuickTiles C={C} />
-        </View>
+        {/* System tiles — collapsed by default */}
+        <Pressable
+          onPress={() => setTilesOpen((v) => !v)}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 20,
+            paddingVertical: 14,
+            opacity: pressed ? 0.6 : 1,
+          })}
+        >
+          <Text style={{ fontFamily: MONO, fontSize: 12, color: C.textSecondary }}>
+            {tilesOpen ? '▾' : '▸'} system info
+          </Text>
+          <Text style={{ fontFamily: MONO, fontSize: 11, color: C.textSecondary }}>
+            {tilesOpen ? 'collapse' : 'expand'}
+          </Text>
+        </Pressable>
+
+        {tilesOpen && (
+          <>
+            <Divider C={C} />
+            <View style={{ paddingHorizontal: 20, paddingVertical: 20 }}>
+              <QuickTiles C={C} />
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );

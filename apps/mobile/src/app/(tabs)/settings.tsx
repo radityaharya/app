@@ -29,7 +29,7 @@ import { useGeofences } from '@/hooks/useGeofences';
 import { useLocation } from '@/hooks/useLocation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import { dbGetKciFallback, dbSetKciFallback, type ThemeScheme } from '@/lib/db';
+import { dbGetFetchSource, dbSetFetchSource, type FetchSource, type ThemeScheme } from '@/lib/db';
 
 async function openAndroidSettings(action: IntentLauncher.ActivityAction) {
   if (Platform.OS !== 'android') return;
@@ -44,7 +44,7 @@ async function openAndroidSettings(action: IntentLauncher.ActivityAction) {
 
 export default function SettingsScreen() {
   const { colors: C, scheme, setScheme } = useThemeContext();
-  const [kciFallback, setKciFallback] = useState(() => dbGetKciFallback());
+  const [fetchSource, setFetchSourceState] = useState<FetchSource>(() => dbGetFetchSource());
   const insets = useSafeAreaInsets();
   const location = useLocation();
   const notifications = useNotifications();
@@ -174,14 +174,18 @@ export default function SettingsScreen() {
             onPress={() => router.push('/qr-scan' as never)}
           />
           <Divider C={C} />
-          <ToggleRow
+          <SegmentRow
             C={C}
-            label="kci direct fallback"
-            detail="fetch schedules from kci.id when api is unavailable"
-            value={kciFallback}
+            label="schedule source"
+            detail={fetchSource === 'server' ? 'fetching via your server' : 'fetching directly from KCI on device'}
+            value={fetchSource}
+            options={[
+              { value: 'server', label: 'server' },
+              { value: 'direct', label: 'direct' },
+            ]}
             onChange={(v) => {
-              setKciFallback(v);
-              dbSetKciFallback(v);
+              setFetchSourceState(v as FetchSource);
+              dbSetFetchSource(v as FetchSource);
             }}
           />
           <Divider C={C} />
@@ -646,6 +650,63 @@ function ToggleRow({
         trackColor={{ false: C.hairline, true: C.text }}
         thumbColor={C.background}
       />
+    </View>
+  );
+}
+
+function SegmentRow({
+  C,
+  label,
+  detail,
+  value,
+  options,
+  onChange,
+}: {
+  C: ThemeColors;
+  label: string;
+  detail: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (v: string) => void;
+}) {
+  return (
+    <View style={{ paddingHorizontal: 16, paddingVertical: 14, gap: 10 }}>
+      <View style={{ gap: 2 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', fontFamily: MONO, color: C.text }}>
+          {label}
+        </Text>
+        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>{detail}</Text>
+      </View>
+      <View style={{ flexDirection: 'row', gap: 8 }}>
+        {options.map((opt) => {
+          const active = opt.value === value;
+          return (
+            <Pressable
+              key={opt.value}
+              onPress={() => onChange(opt.value)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 14,
+                paddingVertical: 7,
+                borderWidth: 1,
+                borderColor: active ? C.text : C.hairline,
+                backgroundColor: active ? C.text : 'transparent',
+                opacity: pressed ? 0.7 : 1,
+              })}
+            >
+              <Text
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 12,
+                  fontWeight: active ? '600' : '400',
+                  color: active ? C.background : C.textSecondary,
+                }}
+              >
+                {opt.label}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
     </View>
   );
 }

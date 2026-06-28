@@ -276,6 +276,30 @@ func (s *Store) SchedulesSyncedToday(stationID string) (bool, error) {
 
 // DeleteSchedulesOlderThan removes schedule rows whose synced_at is before t.
 // Used to purge yesterday's data after a nightly re-sync.
+// LineRoute is a distinct line + route pair from the schedule cache.
+type LineRoute struct {
+	Line  string
+	Route string
+}
+
+// DistinctLinesAndRoutes returns every unique (line, route) pair in the cache.
+func (s *Store) DistinctLinesAndRoutes() ([]LineRoute, error) {
+	rows, err := s.db.Query(`SELECT DISTINCT line, route FROM schedules ORDER BY line, route`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []LineRoute
+	for rows.Next() {
+		var lr LineRoute
+		if err := rows.Scan(&lr.Line, &lr.Route); err != nil {
+			return nil, err
+		}
+		out = append(out, lr)
+	}
+	return out, rows.Err()
+}
+
 func (s *Store) DeleteSchedulesOlderThan(t time.Time) error {
 	_, err := s.db.Exec(`DELETE FROM schedules WHERE synced_at < ?`, t.UTC())
 	return err

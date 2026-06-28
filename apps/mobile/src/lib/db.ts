@@ -128,15 +128,26 @@ export function dbSetThemeScheme(scheme: ThemeScheme): void {
   setSetting('theme_scheme', scheme);
 }
 
-// ── KCI direct fallback ───────────────────────────────────────────────────────
+// ── Schedule fetch source ─────────────────────────────────────────────────────
+// 'server' = fetch via our API proxy (default)
+// 'direct' = fetch from KCI directly from the device
 
-export function dbGetKciFallback(): boolean {
-  return getSetting('kci_fallback') === 'true';
+export type FetchSource = 'server' | 'direct';
+
+export function dbGetFetchSource(): FetchSource {
+  const v = getSetting('fetch_source');
+  // migrate old kci_fallback=true → direct
+  if (!v) return getSetting('kci_fallback') === 'true' ? 'direct' : 'server';
+  return v === 'direct' ? 'direct' : 'server';
 }
 
-export function dbSetKciFallback(enabled: boolean): void {
-  setSetting('kci_fallback', enabled ? 'true' : 'false');
+export function dbSetFetchSource(source: FetchSource): void {
+  setSetting('fetch_source', source);
 }
+
+// keep old exports for any lingering references during migration
+export function dbGetKciFallback(): boolean { return dbGetFetchSource() === 'direct'; }
+export function dbSetKciFallback(enabled: boolean): void { dbSetFetchSource(enabled ? 'direct' : 'server'); }
 
 // ── Hermes Dashboard URL ──────────────────────────────────────────────────────
 
@@ -180,6 +191,14 @@ function todayWIB(): string {
   return new Date(
     Date.now() + WIB_OFFSET_MS - new Date().getTimezoneOffset() * 60000
   ).toISOString().slice(0, 10);
+}
+
+export async function dbGetScheduleSyncedAt(stationId: string): Promise<Date | null> {
+  const row = await db.getFirstAsync<{ synced_at: number }>(
+    'SELECT synced_at FROM schedules WHERE station_id = ? AND date = ?',
+    stationId, todayWIB()
+  );
+  return row ? new Date(row.synced_at * 1000) : null;
 }
 
 export async function dbGetScheduleCache(stationId: string): Promise<Schedule[] | null> {

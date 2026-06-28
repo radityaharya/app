@@ -1,80 +1,117 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { api, type Schedule } from '@/lib/api';
-import { dbGetKciFallback, dbGetScheduleCache, dbSetScheduleCache } from '@/lib/db';
+import {
+  dbGetFetchSource,
+  dbGetScheduleCache,
+  dbGetScheduleSyncedAt,
+  dbSetScheduleCache,
+} from '@/lib/db';
 import { kciSchedule, kciStations } from '@/lib/kci';
+
+export type ScheduleSource = 'cache' | 'server' | 'direct' | null;
 
 export interface UseScheduleResult {
   schedules: Schedule[];
   loading: boolean;
   error: string | null;
+  source: ScheduleSource;
+  syncedAt: Date | null;
   refetch: () => Promise<void>;
+  reload: () => Promise<void>;
 }
 
 export function useSchedule(stationId: string | null): UseScheduleResult {
   const [schedules, setSchedules] = useState<Schedule[]>([]);
   const [loading, setLoading] = useState(!!stationId);
   const [error, setError] = useState<string | null>(null);
+  const [source, setSource] = useState<ScheduleSource>(null);
+  const [syncedAt, setSyncedAt] = useState<Date | null>(null);
 
-  async function load(forceNetwork = false) {
-    if (!stationId) return;
+  // Stable ref so callbacks never need stationId in their dep array
+  const stationIdRef = useRef(stationId);
+  stationIdRef.current = stationId;
+
+  async function load(forceNetwork: boolean) {
+    const sid = stationIdRef.current;
+    if (!sid) return;
     setLoading(true);
     setError(null);
 
-    // 1. SQLite cache (today only).
+    const fetchSource = dbGetFetchSource();
+
     if (!forceNetwork) {
-      const cached = await dbGetScheduleCache(stationId);
+      const cached = await dbGetScheduleCache(sid);
       if (cached && cached.length > 0) {
-        console.log(`[schedule] ${stationId}: served ${cached.length} rows from sqlite cache`);
+        console.log(`[schedule] ${sid}: cache (${cached.length} rows)`);
         setSchedules(cached);
+        setSource('cache');
+        setSyncedAt(await dbGetScheduleSyncedAt(sid));
         setLoading(false);
         return;
       }
     }
 
-    // 2. Fetch from backend, write to SQLite.
-    try {
-      console.log(`[schedule] ${stationId}: fetching from api`);
-      const data = await api.schedule.byStation(stationId);
-      const result = data ?? [];
-      console.log(`[schedule] ${stationId}: api returned ${result.length} rows`);
-      setSchedules(result);
-      if (result.length > 0) {
-        await dbSetScheduleCache(stationId, result);
-      }
-    } catch (err) {
-      console.warn(`[schedule] ${stationId}: api failed —`, err);
-      if (dbGetKciFallback()) {
-        try {
-          console.log(`[schedule] ${stationId}: trying kci direct fallback`);
-          const stations = await kciStations();
-          const data = await kciSchedule(stationId, stations);
-          const result = data ?? [];
-          console.log(`[schedule] ${stationId}: kci returned ${result.length} rows`);
-          setSchedules(result);
-          if (result.length > 0) {
-            await dbSetScheduleCache(stationId, result);
-          }
-          return;
-        } catch (kciErr) {
-          console.warn(`[schedule] ${stationId}: kci fallback also failed —`, kciErr);
+    if (fetchSource === 'direct') {
+      try {
+        console.log(`[schedule] ${sid}: direct → KCI`);
+        const stations = await kciStations();
+        const data = await kciSchedule(sid, stations);
+        const result = data ?? [];
+        setSchedules(result);
+        setSource('direct');
+        if (result.length > 0) {
+          await dbSetScheduleCache(sid, result);
+          setSyncedAt(await dbGetScheduleSyncedAt(sid));
+          api.schedule.push(sid, result).catch((e) =>
+            console.warn(`[schedule] ${sid}: push-back failed —`, e),
+          );
         }
+      } catch (err) {
+        console.warn(`[schedule] ${sid}: direct fetch failed —`, err);
+        const stale = await dbGetScheduleCache(sid);
+        if (stale?.length) {
+          setSchedules(stale);
+          setSource('cache');
+          setSyncedAt(await dbGetScheduleSyncedAt(sid));
+        }
+        setError(String(err));
       }
-      // Show stale cache rather than nothing.
-      const stale = await dbGetScheduleCache(stationId);
-      if (stale && stale.length > 0) {
-        console.log(`[schedule] ${stationId}: showing ${stale.length} stale rows from sqlite`);
-        setSchedules(stale);
+    } else {
+      try {
+        console.log(`[schedule] ${sid}: server → API`);
+        const data = await api.schedule.byStation(sid);
+        const result = data ?? [];
+        setSchedules(result);
+        setSource('server');
+        if (result.length > 0) {
+          await dbSetScheduleCache(sid, result);
+          setSyncedAt(await dbGetScheduleSyncedAt(sid));
+        }
+      } catch (err) {
+        console.warn(`[schedule] ${sid}: server fetch failed —`, err);
+        const stale = await dbGetScheduleCache(sid);
+        if (stale?.length) {
+          setSchedules(stale);
+          setSource('cache');
+          setSyncedAt(await dbGetScheduleSyncedAt(sid));
+        }
+        setError(String(err));
       }
-      setError(String(err));
-    } finally {
-      setLoading(false);
     }
+
+    setLoading(false);
   }
+
+  // Stable callbacks — empty dep array is safe because load reads stationId via ref
+  const refetch = useCallback(() => load(true), []);
+  const reload = useCallback(() => load(false), []);
 
   useEffect(() => {
     if (!stationId) {
       setSchedules([]);
+      setSource(null);
+      setSyncedAt(null);
       setLoading(false);
       return;
     }
@@ -82,5 +119,5 @@ export function useSchedule(stationId: string | null): UseScheduleResult {
     load(false);
   }, [stationId]);
 
-  return { schedules, loading, error, refetch: () => load(true) };
+  return { schedules, loading, error, source, syncedAt, refetch, reload };
 }

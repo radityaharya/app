@@ -20,11 +20,10 @@ function formatRelativeTime(iso?: string, epoch?: number): string {
   const diff = Date.now() - date.getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 60) return `${mins}m`;
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  const days = Math.floor(hours / 24);
-  return `${days}d ago`;
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
 }
 
 function sortSessions(sessions: HermesSession[]): HermesSession[] {
@@ -62,137 +61,95 @@ export function HermesSection({ C }: HermesSectionProps) {
     }
   }
 
-  const statusColor = checking
-    ? C.textSecondary
-    : connected
-      ? C.statusActive
-      : C.destructive;
+  const statusDot = checking ? C.textSecondary : connected ? C.statusActive : C.destructive;
 
   return (
-    <View>
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-        }}
-      >
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-          <View
-            style={{
-              width: 8,
-              height: 8,
-              borderRadius: 4,
-              backgroundColor: statusColor,
-            }}
-          />
-          <Text
-            style={{
-              fontSize: 11,
-              fontWeight: '700',
-              fontFamily: MONO,
-              color: C.textSecondary,
-              letterSpacing: 0.8,
-              textTransform: 'uppercase',
-            }}
-          >
+    <View style={{ gap: 14 }}>
+      {/* Header */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 7 }}>
+          <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusDot }} />
+          <Text style={{ fontFamily: MONO, fontSize: 13, fontWeight: '600', color: C.text }}>
             hermes
           </Text>
+          {mainModelLabel ? (
+            <Text style={{ fontFamily: MONO, fontSize: 11, color: C.textSecondary }}>
+              · {mainModelLabel}
+            </Text>
+          ) : null}
         </View>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-          <Pressable
-            onPress={() => router.push('/integrations')}
-            hitSlop={8}
-            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-          >
-            <Text style={{ fontSize: 11, fontFamily: MONO, color: C.accent }}>setup</Text>
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/hermes')}
-            hitSlop={8}
-            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-          >
-            <Text style={{ fontSize: 11, fontFamily: MONO, color: C.accent }}>all</Text>
-          </Pressable>
-        </View>
+        <Pressable
+          onPress={() => router.push('/hermes')}
+          hitSlop={10}
+          style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+        >
+          <Text style={{ fontFamily: MONO, fontSize: 11, color: C.accent }}>view all →</Text>
+        </Pressable>
       </View>
 
-      {mainModelLabel ? (
-        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginBottom: 10 }}>
-          main: {mainModelLabel}
-        </Text>
-      ) : null}
-
+      {/* Body */}
       {!configured ? (
         <Pressable
           onPress={() => router.push('/integrations')}
           style={({ pressed }) => ({
+            paddingVertical: 16,
             borderWidth: 1,
             borderColor: C.hairline,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
+            paddingHorizontal: 16,
             opacity: pressed ? 0.7 : 1,
+            gap: 4,
           })}
         >
-          <Text style={{ fontSize: 13, fontFamily: MONO, color: C.text, lineHeight: 20 }}>
-            connect hermes agent
+          <Text style={{ fontFamily: MONO, fontSize: 13, color: C.text }}>
+            connect hermes
           </Text>
-          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginTop: 4 }}>
-            set url and api key in integrations
+          <Text style={{ fontFamily: MONO, fontSize: 11, color: C.textSecondary }}>
+            set url + api key in integrations →
           </Text>
         </Pressable>
       ) : loading && previews.length === 0 ? (
-        <View style={{ paddingVertical: 20, alignItems: 'center' }}>
-          <ActivityIndicator color={C.textSecondary} />
-        </View>
+        <ActivityIndicator color={C.textSecondary} style={{ alignSelf: 'flex-start' }} />
       ) : previews.length === 0 ? (
         <Pressable
           onPress={handleNewChat}
           style={({ pressed }) => ({
+            paddingVertical: 16,
             borderWidth: 1,
             borderColor: C.hairline,
-            paddingHorizontal: 14,
-            paddingVertical: 12,
+            paddingHorizontal: 16,
             opacity: pressed ? 0.7 : 1,
+            gap: 4,
           })}
         >
-          <Text style={{ fontSize: 13, fontFamily: MONO, color: C.text }}>start a chat</Text>
-          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginTop: 4 }}>
-            no sessions yet — tap to open hermes
+          <Text style={{ fontFamily: MONO, fontSize: 13, color: C.text }}>start a chat</Text>
+          <Text style={{ fontFamily: MONO, fontSize: 11, color: C.textSecondary }}>
+            no sessions yet
           </Text>
         </Pressable>
       ) : (
-        <View style={{ borderWidth: 1, borderColor: C.hairline }}>
-          {previews.map((session, i) => (
-            <View key={session.id}>
-              {i > 0 ? <View style={{ height: 1, backgroundColor: C.hairline }} /> : null}
-              <SessionPreview
-                session={session}
-                C={C}
-                onPress={() => router.push(`/hermes/${session.id}` as never)}
-              />
-            </View>
+        <View style={{ gap: 2 }}>
+          {previews.map((session) => (
+            <SessionPreview
+              key={session.id}
+              session={session}
+              C={C}
+              onPress={() => router.push(`/hermes/${session.id}` as never)}
+            />
           ))}
         </View>
       )}
 
+      {/* New chat */}
       {configured ? (
         <Pressable
           onPress={handleNewChat}
           style={({ pressed }) => ({
-            marginTop: 10,
-            borderWidth: 1,
-            borderColor: C.hairline,
-            paddingHorizontal: 14,
-            paddingVertical: 10,
-            opacity: pressed ? 0.7 : 1,
+            alignSelf: 'flex-start',
+            opacity: pressed ? 0.5 : 1,
           })}
+          hitSlop={8}
         >
-          <Text style={{ fontSize: 12, fontWeight: '600', fontFamily: MONO, color: C.text }}>
-            + new chat
-          </Text>
+          <Text style={{ fontFamily: MONO, fontSize: 12, color: C.accent }}>+ new chat</Text>
         </Pressable>
       ) : null}
     </View>
@@ -208,7 +165,7 @@ function SessionPreview({
   C: ThemeColors;
   onPress: () => void;
 }) {
-  const title = session.title?.trim() || 'untitled session';
+  const title = session.title?.trim() || 'untitled';
   const preview = session.preview?.trim();
   const time = formatRelativeTime(
     session.updated_at ?? session.created_at,
@@ -219,38 +176,33 @@ function SessionPreview({
     <Pressable
       onPress={onPress}
       style={({ pressed }) => ({
+        paddingVertical: 11,
         paddingHorizontal: 14,
-        paddingVertical: 12,
-        opacity: pressed ? 0.7 : 1,
+        borderWidth: 1,
+        borderColor: C.hairline,
+        opacity: pressed ? 0.65 : 1,
+        gap: 3,
       })}
     >
-      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 10 }}>
-        <View style={{ flex: 1 }}>
-          <Text
-            numberOfLines={1}
-            style={{ fontSize: 13, fontWeight: '600', fontFamily: MONO, color: C.text }}
-          >
-            {title}
-          </Text>
-          {preview ? (
-            <Text
-              numberOfLines={2}
-              style={{
-                fontSize: 11,
-                fontFamily: MONO,
-                color: C.textSecondary,
-                marginTop: 4,
-                lineHeight: 16,
-              }}
-            >
-              {preview}
-            </Text>
-          ) : null}
-        </View>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <Text
+          numberOfLines={1}
+          style={{ flex: 1, fontFamily: MONO, fontSize: 13, fontWeight: '600', color: C.text }}
+        >
+          {title}
+        </Text>
         {time ? (
-          <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>{time}</Text>
+          <Text style={{ fontFamily: MONO, fontSize: 10, color: C.textSecondary }}>{time}</Text>
         ) : null}
       </View>
+      {preview ? (
+        <Text
+          numberOfLines={1}
+          style={{ fontFamily: MONO, fontSize: 11, color: C.textSecondary, lineHeight: 16 }}
+        >
+          {preview}
+        </Text>
+      ) : null}
     </Pressable>
   );
 }

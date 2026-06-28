@@ -12,6 +12,7 @@ import (
 	"github.com/radityaharya/commuter/internal/config"
 	"github.com/radityaharya/commuter/internal/handler"
 	"github.com/radityaharya/commuter/internal/krl"
+	"github.com/radityaharya/commuter/internal/mcpserver"
 	"github.com/radityaharya/commuter/internal/push"
 	"github.com/radityaharya/commuter/internal/store"
 	commutesync "github.com/radityaharya/commuter/internal/sync"
@@ -58,8 +59,13 @@ func main() {
 	mux.HandleFunc("GET /v1/stations/{id}", stationGet)
 
 	mux.HandleFunc("GET /v1/schedule/{station_id}", handler.Schedule(db, syncer))
+	mux.HandleFunc("POST /v1/schedule/{station_id}", handler.SchedulePush(db))
 
 	mux.HandleFunc("POST /v1/geofence/trigger", handler.GeofenceTrigger(db, hermesWebhook))
+
+	mcpHandler := mcpserver.New(db, syncer)
+	mux.Handle("/mcp", mcpHandler)
+	mux.Handle("/mcp/", mcpHandler)
 
 	// --- Server --------------------------------------------------------------
 	addr := fmt.Sprintf(":%s", cfg.Port)

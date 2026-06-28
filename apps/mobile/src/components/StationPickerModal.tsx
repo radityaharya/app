@@ -65,7 +65,7 @@ export function StationPickerModal({
   );
 
   const renderItem = useCallback(
-    ({ item, index }: { item: Station; index: number }) => {
+    ({ item }: { item: Station; index: number }) => {
       const checked = selectedIds.has(item.id);
       const hasCoords = COORDINATED_STATION_IDS.has(item.id);
       return (
@@ -75,30 +75,29 @@ export function StationPickerModal({
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 20,
-            paddingVertical: 13,
+            paddingVertical: 14,
             backgroundColor: pressed ? C.backgroundSelected : 'transparent',
             gap: 14,
           })}
         >
-          {/* Check indicator — text-based, no icon */}
-          <Text
+          {/* Selection dot */}
+          <View
             style={{
-              fontSize: 12,
-              fontWeight: '700',
-              fontFamily: MONO,
-              color: checked ? C.statusActive : C.textSecondary,
-              width: 20,
-              textAlign: 'center',
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              borderWidth: 1.5,
+              borderColor: checked ? C.statusActive : C.hairline,
+              backgroundColor: checked ? C.statusActive : 'transparent',
+              flexShrink: 0,
             }}
-          >
-            {checked ? '[+]' : '[ ]'}
-          </Text>
+          />
 
-          <View style={{ flex: 1 }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <Text
               style={{
                 fontSize: 14,
-                fontWeight: '500',
+                fontWeight: checked ? '600' : '400',
                 fontFamily: MONO,
                 color: C.text,
                 letterSpacing: -0.1,
@@ -107,25 +106,40 @@ export function StationPickerModal({
             >
               {item.name.replace(/\bSTASIUN\b/g, '').trim().toLowerCase()}
             </Text>
-            <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary, marginTop: 2, letterSpacing: 0.2 }}>
+            <Text
+              style={{
+                fontSize: 11,
+                fontFamily: MONO,
+                color: C.textSecondary,
+                marginTop: 2,
+                letterSpacing: 0.2,
+              }}
+            >
               {item.id}
-              {!hasCoords && '  ·  schedule only'}
+              {!hasCoords ? '  ·  no proximity' : ''}
             </Text>
           </View>
 
-          {/* Proximity-capable label */}
           {hasCoords && (
-            <Text
+            <View
               style={{
-                fontSize: 10,
-                fontWeight: '600',
-                fontFamily: MONO,
-                color: C.accent,
-                letterSpacing: 0.4,
+                paddingHorizontal: 7,
+                paddingVertical: 3,
+                borderWidth: 1,
+                borderColor: C.accent,
               }}
             >
-              alert
-            </Text>
+              <Text
+                style={{
+                  fontSize: 10,
+                  fontFamily: MONO,
+                  color: C.accent,
+                  letterSpacing: 0.4,
+                }}
+              >
+                alert
+              </Text>
+            </View>
           )}
         </Pressable>
       );
@@ -178,7 +192,6 @@ export function StationPickerModal({
               opacity: pressed ? 0.6 : 1,
               borderWidth: 1,
               borderColor: C.hairline,
-              borderRadius: 4,
               paddingHorizontal: 12,
               paddingVertical: 6,
             })}

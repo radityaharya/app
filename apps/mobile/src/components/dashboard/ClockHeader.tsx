@@ -19,9 +19,10 @@ function formatClock(now: Date) {
 
 interface ClockHeaderProps {
   C: ThemeColors;
+  compact?: boolean;
 }
 
-export function ClockHeader({ C }: ClockHeaderProps) {
+export function ClockHeader({ C, compact }: ClockHeaderProps) {
   const [clock, setClock] = useState(() => formatClock(new Date()));
 
   useEffect(() => {
@@ -30,6 +31,22 @@ export function ClockHeader({ C }: ClockHeaderProps) {
     const id = setInterval(tick, 10_000);
     return () => clearInterval(id);
   }, []);
+
+  if (compact) {
+    return (
+      <Text
+        style={{
+          fontSize: 13,
+          fontFamily: MONO,
+          color: C.textSecondary,
+          fontVariant: ['tabular-nums'],
+          letterSpacing: 0.2,
+        }}
+      >
+        {clock.time} · {clock.date}
+      </Text>
+    );
+  }
 
   return (
     <View>

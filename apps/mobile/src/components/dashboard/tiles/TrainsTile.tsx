@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import { useMemo } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import { useCallback, useMemo } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 
 import { DepartureRow } from '@/components/trains/DepartureRow';
@@ -44,7 +44,9 @@ export function TrainsTile({ C }: TrainsTileProps) {
   }, [location.coords, monitored]);
 
   const activeId = nearestId ?? monitored[0]?.id ?? null;
-  const { schedules, loading } = useSchedule(activeId);
+  const { schedules, loading, source, syncedAt, reload } = useSchedule(activeId);
+
+  useFocusEffect(useCallback(() => { reload(); }, [reload]));
 
   const stationNameById = useMemo(
     () => new Map(stations.map((s) => [s.id, s.name])),
@@ -52,8 +54,16 @@ export function TrainsTile({ C }: TrainsTileProps) {
   );
 
   const now = new Date();
-  const upcoming = schedules.filter((s) => new Date(s.departs_at) >= now).slice(0, 2);
+  const upcoming = schedules.filter((s) => new Date(s.departs_at) >= now).slice(0, 4);
   const activeStation = monitored.find((m) => m.id === activeId);
+
+  function formatSyncedAt(d: Date | null): string {
+    if (!d) return '';
+    const diff = Math.floor((Date.now() - d.getTime()) / 60000);
+    if (diff < 1) return 'just now';
+    if (diff < 60) return `${diff}m ago`;
+    return `${Math.floor(diff / 60)}h ago`;
+  }
 
   if (monitored.length === 0) {
     return (
@@ -80,12 +90,19 @@ export function TrainsTile({ C }: TrainsTileProps) {
           opacity: pressed ? 0.7 : 1,
         })}
       >
-        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', fontFamily: MONO, color: C.text }}>
           {activeStation
             ? activeStation.name.replace(/\bSTASIUN\b/g, '').trim().toLowerCase()
             : 'trains'}
         </Text>
-        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>›</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {source ? (
+            <Text style={{ fontSize: 10, fontFamily: MONO, color: C.textSecondary }}>
+              {source === 'cache' ? `cached` : source}{syncedAt ? ` · ${formatSyncedAt(syncedAt)}` : ''}
+            </Text>
+          ) : null}
+          <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>›</Text>
+        </View>
       </Pressable>
 
       {loading && upcoming.length === 0 ? (

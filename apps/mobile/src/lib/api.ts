@@ -45,6 +45,20 @@ async function apiPost<T>(path: string, body: unknown): Promise<T> {
   return json.data;
 }
 
+async function apiPostRaw<T>(path: string, body: unknown): Promise<T> {
+  const baseUrl = dbGetApiUrl();
+  const res = await fetch(`${baseUrl}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const text = await res.text().catch(() => res.statusText);
+    throw new Error(`API POST ${path} → ${res.status}: ${text}`);
+  }
+  return res.json() as Promise<T>;
+}
+
 export interface StationMetadata {
   active: boolean;
   origin: { daop: number; fg_enable: number };
@@ -82,6 +96,8 @@ export const api = {
   },
   schedule: {
     byStation: (stationId: string) => apiFetch<Schedule[]>(`/v1/schedule/${stationId}`),
+    push: (stationId: string, schedules: Schedule[]) =>
+      apiPostRaw<{ accepted: number }>(`/v1/schedule/${stationId}`, schedules),
   },
   geofence: {
     trigger: (payload: GeofenceTriggerRequest) =>

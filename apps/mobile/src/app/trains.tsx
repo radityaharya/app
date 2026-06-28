@@ -1,9 +1,3 @@
-/**
- * Trains tool sub-page.
- *
- * Full schedule view + station management. Presented as a modal
- * from the root Stack navigator.
- */
 import { router } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -17,7 +11,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { DepartureRow } from '@/components/trains/DepartureRow';
-import { StationChip } from '@/components/trains/StationChip';
 import { StationPickerModal } from '@/components/StationPickerModal';
 import { MONO, type ThemeColors } from '@/components/tokens';
 import { useThemeContext } from '@/context/ThemeContext';
@@ -39,6 +32,14 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function formatSyncedAt(d: Date | null): string {
+  if (!d) return '';
+  const diff = Math.floor((Date.now() - d.getTime()) / 60000);
+  if (diff < 1) return 'just now';
+  if (diff < 60) return `${diff}m ago`;
+  return `${Math.floor(diff / 60)}h ago`;
+}
+
 export default function TrainsScreen() {
   const { colors: C } = useThemeContext();
   const location = useLocation();
@@ -46,10 +47,10 @@ export default function TrainsScreen() {
   const { monitored, add, remove } = useMonitoredStations(stations);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [manualId, setManualId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
   const listRef = useRef<FlatList>(null);
   const hasScrolledRef = useRef(false);
 
-  // Nearest monitored station
   const nearestId = useMemo(() => {
     if (!location.coords || monitored.length === 0) return null;
     const { latitude, longitude } = location.coords;
@@ -70,7 +71,7 @@ export default function TrainsScreen() {
       ? manualId
       : nearestId ?? monitored[0]?.id ?? null;
 
-  const { schedules, loading: scheduleLoading, refetch } = useSchedule(activeId);
+  const { schedules, loading: scheduleLoading, source, syncedAt, refetch } = useSchedule(activeId);
 
   const stationNameById = useMemo(
     () => new Map(stations.map((s) => [s.id, s.name])),
@@ -92,7 +93,6 @@ export default function TrainsScreen() {
 
   const activeStation = monitored.find((m) => m.id === activeId);
 
-  // Autoscroll on first load
   useEffect(() => {
     if (!scheduleLoading && upcoming.length > 0 && !hasScrolledRef.current) {
       hasScrolledRef.current = true;
@@ -103,6 +103,10 @@ export default function TrainsScreen() {
   useEffect(() => {
     hasScrolledRef.current = false;
   }, [activeId]);
+
+  useEffect(() => {
+    if (editMode && monitored.length <= 1) setEditMode(false);
+  }, [monitored.length, editMode]);
 
   const renderItem = useCallback(
     ({ item, index }: { item: Schedule; index: number }) => {
@@ -147,13 +151,17 @@ export default function TrainsScreen() {
     [C, past, upcoming.length, stationNameById],
   );
 
+  const sourceLine = source
+    ? `${source}${syncedAt ? ` · ${formatSyncedAt(syncedAt)}` : ''}`
+    : null;
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.background }}>
       {/* ── Header ── */}
       <View
         style={{
           flexDirection: 'row',
-          alignItems: 'center',
+          alignItems: 'flex-start',
           justifyContent: 'space-between',
           paddingHorizontal: 20,
           paddingTop: 16,
@@ -162,7 +170,7 @@ export default function TrainsScreen() {
           borderBottomColor: C.hairline,
         }}
       >
-        <View>
+        <View style={{ flex: 1, gap: 2 }}>
           <Text
             style={{
               fontSize: 18,
@@ -174,180 +182,148 @@ export default function TrainsScreen() {
           >
             trains
           </Text>
-          {activeStation && (
+          {activeStation ? (
             <Text
               style={{
                 fontSize: 11,
                 fontFamily: MONO,
                 color: C.textSecondary,
-                marginTop: 2,
                 letterSpacing: 0.2,
               }}
             >
               {activeStation.name.replace(/\bSTASIUN\b/g, '').trim().toLowerCase()}
+              {sourceLine ? ` · ${sourceLine}` : ''}
             </Text>
-          )}
-        </View>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={12}
-          style={({ pressed }) => ({
-            opacity: pressed ? 0.6 : 1,
-            borderWidth: 1,
-            borderColor: C.hairline,
-            borderRadius: 4,
-            paddingHorizontal: 12,
-            paddingVertical: 6,
-          })}
-        >
-          <Text style={{ fontSize: 13, fontWeight: '500', fontFamily: MONO, color: C.text }}>
-            done
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* ── Station chips + manage ── */}
-      <View style={{ paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: C.hairline }}>
-        <View
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            paddingHorizontal: 20,
-            marginBottom: 10,
-          }}
-        >
-          <Text
-            style={{
-              fontSize: 10,
-              fontWeight: '700',
-              fontFamily: MONO,
-              color: C.textSecondary,
-              letterSpacing: 0.8,
-              textTransform: 'uppercase',
-            }}
-          >
-            stations
-          </Text>
-          <Pressable
-            onPress={() => setPickerOpen(true)}
-            hitSlop={8}
-            style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
-          >
-            <Text style={{ fontSize: 11, fontWeight: '600', fontFamily: MONO, color: C.accent }}>
-              [+] add
-            </Text>
-          </Pressable>
+          ) : null}
         </View>
 
-        {monitored.length > 0 ? (
-          <FlatList
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            data={monitored}
-            keyExtractor={(m) => m.id}
-            contentContainerStyle={{ paddingHorizontal: 20, gap: 6 }}
-            renderItem={({ item: m }) => (
-              <StationChip
-                name={m.name}
-                active={m.id === activeId}
-                onPress={() => setManualId(m.id)}
-                C={C}
-              />
-            )}
-          />
-        ) : (
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          {/* Force refresh */}
           <Pressable
-            onPress={() => setPickerOpen(true)}
+            onPress={() => refetch()}
+            disabled={scheduleLoading}
+            hitSlop={12}
             style={({ pressed }) => ({
-              paddingHorizontal: 20,
-              paddingVertical: 4,
-              opacity: pressed ? 0.7 : 1,
+              opacity: scheduleLoading ? 0.3 : pressed ? 0.5 : 1,
+              borderWidth: 1,
+              borderColor: C.hairline,
+              paddingHorizontal: 10,
+              paddingVertical: 6,
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 36,
+              height: 32,
             })}
           >
-            <Text style={{ fontSize: 12, fontFamily: MONO, color: C.textSecondary }}>
-              [+] no stations. tap to add.
+            {scheduleLoading ? (
+              <ActivityIndicator size="small" color={C.textSecondary} />
+            ) : (
+              <Text style={{ fontSize: 14, fontFamily: MONO, color: C.text }}>↻</Text>
+            )}
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={12}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.6 : 1,
+              borderWidth: 1,
+              borderColor: C.hairline,
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+            })}
+          >
+            <Text style={{ fontSize: 13, fontWeight: '500', fontFamily: MONO, color: C.text }}>
+              done
             </Text>
           </Pressable>
-        )}
+        </View>
+      </View>
 
-        {/* Managed station list (removable) */}
-        {monitored.length > 0 && (
-          <View style={{ marginTop: 12, borderTopWidth: 1, borderTopColor: C.hairline }}>
-            {monitored.map((m, i) => (
-              <View key={m.id}>
-                {i > 0 && (
-                  <View
-                    style={{ height: 1, backgroundColor: C.hairline, marginHorizontal: 20 }}
-                  />
-                )}
-                <View
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    paddingHorizontal: 20,
-                    paddingVertical: 10,
-                    gap: 12,
-                  }}
+      {/* ── Station chips ── */}
+      <View style={{ borderBottomWidth: 1, borderBottomColor: C.hairline, paddingVertical: 10 }}>
+        <FlatList
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          data={monitored}
+          keyExtractor={(m) => m.id}
+          contentContainerStyle={{ paddingHorizontal: 16, gap: 6 }}
+          ListEmptyComponent={
+            <Pressable
+              onPress={() => setPickerOpen(true)}
+              style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}
+            >
+              <Text style={{ fontSize: 12, fontFamily: MONO, color: C.textSecondary }}>
+                + add a station to get started
+              </Text>
+            </Pressable>
+          }
+          ListFooterComponent={
+            <View style={{ flexDirection: 'row', gap: 6 }}>
+              <Pressable
+                onPress={() => setPickerOpen(true)}
+                hitSlop={8}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                  borderWidth: 1,
+                  borderColor: C.hairline,
+                  opacity: pressed ? 0.5 : 1,
+                })}
+              >
+                <Text style={{ fontSize: 12, fontFamily: MONO, color: C.textSecondary }}>+</Text>
+              </Pressable>
+              {monitored.length > 1 && (
+                <Pressable
+                  onPress={() => setEditMode((v) => !v)}
+                  hitSlop={8}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 12,
+                    paddingVertical: 6,
+                    borderWidth: 1,
+                    borderColor: editMode ? C.text : C.hairline,
+                    backgroundColor: editMode ? C.text : 'transparent',
+                    opacity: pressed ? 0.5 : 1,
+                  })}
                 >
-                  <View style={{ flex: 1 }}>
-                    <Text
-                      style={{
-                        fontSize: 13,
-                        fontWeight: '500',
-                        fontFamily: MONO,
-                        color: C.text,
-                      }}
-                    >
-                      {m.name.replace(/\bSTASIUN\b/g, '').trim().toLowerCase()}
-                    </Text>
-                    <Text
-                      style={{
-                        fontSize: 10,
-                        fontFamily: MONO,
-                        color: C.textSecondary,
-                        marginTop: 1,
-                        letterSpacing: 0.2,
-                      }}
-                    >
-                      {m.id} · {m.coords.radiusMetres}m
-                    </Text>
-                  </View>
-                  <Pressable
-                    onPress={() => remove(m.id)}
-                    hitSlop={10}
-                    style={({ pressed }) => ({ opacity: pressed ? 0.5 : 1 })}
+                  <Text
+                    style={{
+                      fontSize: 12,
+                      fontFamily: MONO,
+                      color: editMode ? C.background : C.textSecondary,
+                    }}
                   >
-                    <Text
-                      style={{
-                        fontSize: 12,
-                        fontWeight: '600',
-                        fontFamily: MONO,
-                        color: C.destructive,
-                      }}
-                    >
-                      [x]
-                    </Text>
-                  </Pressable>
-                </View>
-              </View>
-            ))}
-          </View>
-        )}
+                    edit
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          }
+          renderItem={({ item: m }) => (
+            <StationChipWithRemove
+              name={m.name}
+              active={m.id === activeId}
+              editMode={editMode}
+              onPress={() => {
+                if (!editMode) setManualId(m.id);
+              }}
+              onRemove={() => {
+                remove(m.id);
+                if (manualId === m.id) setManualId(null);
+              }}
+              C={C}
+            />
+          )}
+        />
       </View>
 
       {/* ── Schedule list ── */}
       {!activeId ? (
         <View
-          style={{
-            flex: 1,
-            justifyContent: 'center',
-            paddingHorizontal: 20,
-            paddingBottom: 60,
-          }}
+          style={{ flex: 1, justifyContent: 'center', paddingHorizontal: 20, paddingBottom: 60 }}
         >
           <Text style={{ fontSize: 13, fontFamily: MONO, color: C.textSecondary, lineHeight: 22 }}>
-            [-] add a station above to see departures.
+            add a station above to see departures.
           </Text>
         </View>
       ) : (
@@ -378,7 +354,7 @@ export default function TrainsScreen() {
             !scheduleLoading ? (
               <View style={{ paddingTop: 48, paddingHorizontal: 20 }}>
                 <Text style={{ color: C.textSecondary, fontSize: 13, fontFamily: MONO }}>
-                  [-] no schedules available.
+                  no schedules available.
                 </Text>
               </View>
             ) : null
@@ -401,5 +377,55 @@ export default function TrainsScreen() {
         onClose={() => setPickerOpen(false)}
       />
     </SafeAreaView>
+  );
+}
+
+function StationChipWithRemove({
+  name,
+  active,
+  editMode,
+  onPress,
+  onRemove,
+  C,
+}: {
+  name: string;
+  active: boolean;
+  editMode: boolean;
+  onPress: () => void;
+  onRemove: () => void;
+  C: ThemeColors;
+}) {
+  const label = name.replace(/\bSTASIUN\b/g, '').trim().toLowerCase();
+
+  return (
+    <Pressable
+      onPress={editMode ? onRemove : onPress}
+      style={({ pressed }) => ({
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        backgroundColor: active && !editMode ? C.text : 'transparent',
+        borderWidth: 1,
+        borderColor: editMode ? C.destructive : active ? C.text : C.hairline,
+        opacity: pressed ? 0.65 : 1,
+        gap: 5,
+      })}
+    >
+      <Text
+        style={{
+          fontSize: 12,
+          fontWeight: active && !editMode ? '700' : '400',
+          fontFamily: MONO,
+          color: editMode ? C.destructive : active ? C.background : C.textSecondary,
+          letterSpacing: 0.3,
+        }}
+      >
+        {label}
+      </Text>
+      {editMode && (
+        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.destructive }}>×</Text>
+      )}
+    </Pressable>
   );
 }

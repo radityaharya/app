@@ -107,11 +107,16 @@ func (s *Syncer) syncAll(ctx context.Context) {
 		slog.Warn("sync: purge old schedules failed", "err", err)
 	}
 
-	// Fetch schedule for each station sequentially.
-	ok := 0
+	// Fetch schedule for each station sequentially, skipping those already
+	// synced today so a hot-reload restart doesn't re-fetch everything.
+	ok, skipped := 0, 0
 	for _, st := range stations {
 		if err := ctx.Err(); err != nil {
 			return
+		}
+		if fresh, _ := s.store.SchedulesSyncedToday(st.ID); fresh {
+			skipped++
+			continue
 		}
 		if err := s.syncSchedule(ctx, st.ID, stations); err != nil {
 			slog.Debug("sync: no schedule", "station", st.ID, "err", err)
@@ -124,7 +129,7 @@ func (s *Syncer) syncAll(ctx context.Context) {
 		case <-time.After(200 * time.Millisecond):
 		}
 	}
-	slog.Info("sync: schedules done", "ok", ok)
+	slog.Info("sync: schedules done", "ok", ok, "skipped_fresh", skipped)
 }
 
 func (s *Syncer) syncSchedule(ctx context.Context, stationID string, stations []krl.Station) error {
