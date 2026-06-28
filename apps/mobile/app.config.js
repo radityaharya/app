@@ -142,5 +142,8 @@ module.exports = {
     enabled: true,
     checkAutomatically: 'ON_LOAD',
     fallbackToCacheTimeout: 0,
+    requestHeaders: {
+      'expo-channel-name': process.env.EAS_BUILD_PROFILE ?? 'production',
+    },
   },
 };
