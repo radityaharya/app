@@ -6,13 +6,11 @@ import { DeviceTile } from './tiles/DeviceTile';
 import { GeofencesTile } from './tiles/GeofencesTile';
 import { LocationTile } from './tiles/LocationTile';
 import { NetworkTile } from './tiles/NetworkTile';
-import { TrainsTile } from './tiles/TrainsTile';
 import { MONO, type ThemeColors } from '@/components/tokens';
 import { useDashboardTiles } from '@/hooks/useDashboardTiles';
 import type { DashboardTileId } from '@/lib/db';
 
 const TILE_LABELS: Record<DashboardTileId, string> = {
-  trains: 'trains',
   battery: 'battery',
   network: 'network',
   location: 'location',
@@ -154,8 +152,6 @@ export function QuickTiles({ C }: QuickTilesProps) {
 
 function TileContent({ id, C }: { id: DashboardTileId; C: ThemeColors }) {
   switch (id) {
-    case 'trains':
-      return <TrainsTile C={C} />;
     case 'battery':
       return <BatteryTile C={C} />;
     case 'network':

@@ -6,11 +6,13 @@ import {
   Alert,
   Platform,
   Pressable,
+  Switch,
   Text,
   View,
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useState } from 'react';
 import {
   ChevronRight,
   Moon,
@@ -27,7 +29,7 @@ import { useGeofences } from '@/hooks/useGeofences';
 import { useLocation } from '@/hooks/useLocation';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useShortcuts } from '@/hooks/useShortcuts';
-import type { ThemeScheme } from '@/lib/db';
+import { dbGetKciFallback, dbSetKciFallback, type ThemeScheme } from '@/lib/db';
 
 async function openAndroidSettings(action: IntentLauncher.ActivityAction) {
   if (Platform.OS !== 'android') return;
@@ -42,6 +44,7 @@ async function openAndroidSettings(action: IntentLauncher.ActivityAction) {
 
 export default function SettingsScreen() {
   const { colors: C, scheme, setScheme } = useThemeContext();
+  const [kciFallback, setKciFallback] = useState(() => dbGetKciFallback());
   const insets = useSafeAreaInsets();
   const location = useLocation();
   const notifications = useNotifications();
@@ -169,6 +172,17 @@ export default function SettingsScreen() {
             label="import via QR"
             detail="scan a config QR to set urls & geofences"
             onPress={() => router.push('/qr-scan' as never)}
+          />
+          <Divider C={C} />
+          <ToggleRow
+            C={C}
+            label="kci direct fallback"
+            detail="fetch schedules from kci.id when api is unavailable"
+            value={kciFallback}
+            onChange={(v) => {
+              setKciFallback(v);
+              dbSetKciFallback(v);
+            }}
           />
           <Divider C={C} />
           <ActionRow
@@ -593,6 +607,45 @@ function InfoBlock({
         {label}
       </Text>
       <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>{detail}</Text>
+    </View>
+  );
+}
+
+function ToggleRow({
+  C,
+  label,
+  detail,
+  value,
+  onChange,
+}: {
+  C: ThemeColors;
+  label: string;
+  detail: string;
+  value: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <View
+      style={{
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 12,
+      }}
+    >
+      <View style={{ flex: 1, gap: 2 }}>
+        <Text style={{ fontSize: 14, fontWeight: '600', fontFamily: MONO, color: C.text }}>
+          {label}
+        </Text>
+        <Text style={{ fontSize: 11, fontFamily: MONO, color: C.textSecondary }}>{detail}</Text>
+      </View>
+      <Switch
+        value={value}
+        onValueChange={onChange}
+        trackColor={{ false: C.hairline, true: C.text }}
+        thumbColor={C.background}
+      />
     </View>
   );
 }

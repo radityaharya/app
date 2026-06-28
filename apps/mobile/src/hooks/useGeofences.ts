@@ -7,6 +7,8 @@ import {
   dbUpdateGeofence,
   type GeofenceRow,
 } from '@/lib/db';
+import { STATION_COORDS } from '@/constants/stops';
+import type { Station } from '@/lib/api';
 
 export type { GeofenceRow };
 
@@ -69,5 +71,27 @@ export function useGeofences() {
     reload();
   }, []);
 
-  return { geofences, add, update, remove, toggle };
+  const seedFromStations = useCallback((stations: Station[]): number => {
+    const nameById = new Map(stations.map((s) => [s.id, s.name]));
+    const existingEventNames = new Set(_fences.map((f) => f.event_name));
+    let added = 0;
+    for (const [id, coords] of Object.entries(STATION_COORDS)) {
+      const eventName = `arrive_${id.toLowerCase()}`;
+      if (existingEventNames.has(eventName)) continue;
+      const name = nameById.get(id) ?? id;
+      dbAddGeofence({
+        name,
+        event_name: eventName,
+        latitude: coords.latitude,
+        longitude: coords.longitude,
+        radius_metres: coords.radiusMetres,
+        enabled: true,
+      });
+      added++;
+    }
+    if (added > 0) reload();
+    return added;
+  }, []);
+
+  return { geofences, add, update, remove, toggle, seedFromStations };
 }

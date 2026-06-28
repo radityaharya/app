@@ -3,7 +3,7 @@ import { AppleMaps, GoogleMaps } from 'expo-maps';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { GeofenceStatusPanel } from '@/components/geofences/GeofenceStatusPanel';
@@ -12,6 +12,7 @@ import { useThemeContext } from '@/context/ThemeContext';
 import { useGeofenceDraft } from '@/hooks/useGeofenceDraft';
 import { useGeofenceStatus } from '@/hooks/useGeofenceStatus';
 import { useGeofences } from '@/hooks/useGeofences';
+import { useStations } from '@/hooks/useStations';
 import { buildMapPolygons } from '@/lib/geofenceMap';
 
 const JAKARTA = { latitude: -6.2, longitude: 106.816 };
@@ -19,8 +20,10 @@ const JAKARTA = { latitude: -6.2, longitude: 106.816 };
 export default function GeofencesMapScreen() {
   const { colors: C, scheme } = useThemeContext();
   const insets = useSafeAreaInsets();
-  const { geofences } = useGeofences();
+  const { geofences, seedFromStations } = useGeofences();
   const { inside, refreshLocation } = useGeofenceStatus();
+  const { stations } = useStations();
+  const [seeding, setSeeding] = useState(false);
   const { draft } = useGeofenceDraft();
   const [userCoords, setUserCoords] = useState<{ latitude: number; longitude: number } | null>(null);
 
@@ -71,6 +74,16 @@ export default function GeofencesMapScreen() {
 
   function openEdit(id: string) {
     router.push({ pathname: '/geofences/edit', params: { id } });
+  }
+
+  async function handleSeed() {
+    setSeeding(true);
+    try {
+      const added = seedFromStations(stations);
+      Alert.alert('seeded', `added ${added} station geofence${added !== 1 ? 's' : ''}`);
+    } finally {
+      setSeeding(false);
+    }
   }
 
   return (
@@ -127,6 +140,22 @@ export default function GeofencesMapScreen() {
             style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1, paddingHorizontal: 14, paddingVertical: 10 })}
           >
             <Text style={{ fontSize: 13, fontFamily: MONO, color: C.text }}>← back</Text>
+          </Pressable>
+        </BlurView>
+
+        <BlurView
+          intensity={scheme === 'dark' ? 40 : 72}
+          tint={scheme === 'dark' ? 'dark' : 'light'}
+          style={styles.blurChip}
+        >
+          <Pressable
+            onPress={() => void handleSeed()}
+            disabled={seeding}
+            style={({ pressed }) => ({ opacity: pressed || seeding ? 0.5 : 1, paddingHorizontal: 14, paddingVertical: 10 })}
+          >
+            <Text style={{ fontSize: 13, fontFamily: MONO, color: C.text }}>
+              {seeding ? '...' : 'seed stations'}
+            </Text>
           </Pressable>
         </BlurView>
 

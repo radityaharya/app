@@ -128,6 +128,16 @@ export function dbSetThemeScheme(scheme: ThemeScheme): void {
   setSetting('theme_scheme', scheme);
 }
 
+// ── KCI direct fallback ───────────────────────────────────────────────────────
+
+export function dbGetKciFallback(): boolean {
+  return getSetting('kci_fallback') === 'true';
+}
+
+export function dbSetKciFallback(enabled: boolean): void {
+  setSetting('kci_fallback', enabled ? 'true' : 'false');
+}
+
 // ── Hermes Dashboard URL ──────────────────────────────────────────────────────
 
 export const DEFAULT_HERMES_DASHBOARD_URL =
@@ -292,7 +302,6 @@ export function dbDeleteGeofence(id: string): void {
 // ── Dashboard tiles ───────────────────────────────────────────────────────────
 
 export const DASHBOARD_TILE_IDS = [
-  'trains',
   'battery',
   'network',
   'location',
@@ -301,7 +310,7 @@ export const DASHBOARD_TILE_IDS = [
 ] as const;
 export type DashboardTileId = (typeof DASHBOARD_TILE_IDS)[number];
 
-const DEFAULT_DASHBOARD_TILES: DashboardTileId[] = ['trains'];
+const DEFAULT_DASHBOARD_TILES: DashboardTileId[] = [];
 
 export function dbGetDashboardTiles(): DashboardTileId[] {
   const raw = getSetting('dashboard_tiles');
