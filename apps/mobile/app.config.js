@@ -142,5 +142,10 @@ module.exports = {
     enabled: true,
     checkAutomatically: 'ON_LOAD',
     fallbackToCacheTimeout: 0,
+    ...(process.env.EXPO_UPDATES_CHANNEL && {
+      requestHeaders: {
+        'expo-channel-name': process.env.EXPO_UPDATES_CHANNEL,
+      },
+    }),
   },
 };
