@@ -136,15 +136,18 @@ export default function GeofencesMapScreen() {
       {/* ── Dropdown menu ── */}
       {menuOpen && (
         <Pressable style={StyleSheet.absoluteFill} onPress={() => setMenuOpen(false)}>
-          <View style={[styles.menu, { backgroundColor: C.background, borderColor: C.hairline, top: insets.top + 52, right: 16 }]}>
+          <Pressable
+            style={[styles.menu, { backgroundColor: C.background, borderColor: C.hairline, top: insets.top + 52, right: 16 }]}
+            onPress={() => {}}
+          >
             <Pressable
               style={({ pressed }) => [styles.menuItem, { opacity: pressed ? 0.6 : 1 }]}
-              onPress={() => void handleSeed()}
+              onPress={() => { setMenuOpen(false); void handleSeed(); }}
               disabled={seeding}
             >
               <Text style={{ fontFamily: MONO, fontSize: 13, color: C.text }}>{seeding ? 'seeding…' : 'seed from stations'}</Text>
             </Pressable>
-          </View>
+          </Pressable>
         </Pressable>
       )}
 

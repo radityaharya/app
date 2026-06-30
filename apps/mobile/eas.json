@@ -1,49 +1,24 @@
 {
   "cli": {
-    "version": ">= 18.0.0",
+    "version": ">= 16.0.0",
     "appVersionSource": "local"
   },
   "build": {
     "development": {
-      "node": "20.19.4",
       "developmentClient": true,
       "distribution": "internal",
-      "android": {
-        "buildType": "apk",
-        "gradleCommand": ":app:assembleDebug"
-      },
-      "channel": "development",
       "env": {
-        "EXPO_USE_METRO_WORKSPACE_ROOT": "1"
+        "APP_VARIANT": "development"
       }
     },
     "preview": {
-      "node": "20.19.4",
       "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      },
-      "channel": "preview",
       "env": {
-        "EXPO_USE_METRO_WORKSPACE_ROOT": "1"
+        "APP_VARIANT": "development"
       }
     },
     "production": {
-      "node": "20.19.4",
-      "android": {
-        "buildType": "app-bundle"
-      },
-      "channel": "production",
-      "env": {
-        "EXPO_USE_METRO_WORKSPACE_ROOT": "1"
-      }
-    },
-    "production-apk": {
-      "extends": "production",
-      "distribution": "internal",
-      "android": {
-        "buildType": "apk"
-      }
+      "autoIncrement": true
     }
   },
   "submit": {

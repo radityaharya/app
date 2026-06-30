@@ -1,15 +1,17 @@
+const IS_DEV = process.env.APP_VARIANT === 'development';
+
 module.exports = {
-  name: 'commuter',
+  name: IS_DEV ? '[dev] commuter' : 'commuter',
   slug: 'commuter',
   version: '1.0.0',
   orientation: 'portrait',
   icon: './assets/images/icon.png',
-  scheme: 'commuter',
+  scheme: IS_DEV ? 'commuter-dev' : 'commuter',
   userInterfaceStyle: 'dark',
   backgroundColor: '#161412',
   ios: {
     icon: './assets/expo.icon',
-    bundleIdentifier: 'com.commuter.app',
+    bundleIdentifier: IS_DEV ? 'com.commuter.app.dev' : 'com.commuter.app',
     infoPlist: {
       UIBackgroundModes: ['location', 'remote-notification', 'fetch'],
       NSCameraUsageDescription:
@@ -30,7 +32,7 @@ module.exports = {
     },
     predictiveBackGestureEnabled: false,
     softwareKeyboardLayoutMode: 'resize',
-    package: 'com.commuter.app',
+    package: IS_DEV ? 'com.commuter.app.dev' : 'com.commuter.app',
     googleServicesFile: './google-services.json',
     config: {
       googleMaps: {
