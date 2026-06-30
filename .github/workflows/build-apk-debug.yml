@@ -46,6 +46,8 @@ jobs:
         run: |
           echo "$GOOGLE_SERVICES_JSON_BASE64" | base64 --decode \
             > apps/mobile/google-services.json
+          # Patch package name for dev variant so Google Services plugin accepts it
+          sed -i 's/com\.commuter\.app/com.commuter.app.dev/g' apps/mobile/google-services.json
 
       - name: Generate Android project
         working-directory: apps/mobile
